@@ -1,4 +1,4 @@
-# 慢慢喜欢你 · Our Little Days
+# 照耀在大地上 · Light upon the Earth
 
 A private, responsive memory space for two people and their cat. Built with React, TypeScript, Vite, Motion and Supabase. The interface uses a cinematic photographic cover, quiet blue-gray surfaces, expressive typography, a floating navigation bar, a mobile navigation dock, and direct feedback on every save.
 

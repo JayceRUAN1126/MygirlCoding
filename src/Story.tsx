@@ -47,7 +47,7 @@ export function Brand() {
         <i />
       </span>
       <span>
-        慢慢喜欢你<small>Our little days</small>
+        照耀在大地上<small>Light upon the earth</small>
       </span>
     </div>
   );
@@ -253,7 +253,7 @@ export function Dashboard({
                 <span className="light-dot" /> {settings.names} 的私密影集
               </span>
               <span className="depth-volume">
-                OUR LITTLE DAYS <i /> EST.{" "}
+                LIGHT UPON THE EARTH <i /> EST.{" "}
                 {settings.startDate ? settings.startDate.slice(0, 4) : "NOW"}
               </span>
             </div>

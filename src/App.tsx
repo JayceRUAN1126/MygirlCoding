@@ -51,7 +51,7 @@ const pages: { id: Page; label: string; en: string; icon: LucideIcon }[] = [
   {
     id: "dashboard",
     label: "我们的日常",
-    en: "OUR LITTLE DAYS",
+    en: "LIGHT UPON THE EARTH",
     icon: LayoutDashboard,
   },
   { id: "album", label: "回忆相册", en: "COLLECTED MOMENTS", icon: Images },
@@ -655,7 +655,7 @@ function Home() {
           )}
           <footer className="site-footer">
             <span>
-              Our little days. <span className="footer-dash" />{" "}
+              照耀在大地上 <span className="footer-dash" />{" "}
               今天、明天，和你。
             </span>
             <span>
@@ -1827,7 +1827,7 @@ function SettingsPage({
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `our-little-days-${civilDay(data.settings.timezone)}.json`;
+      a.download = `照耀在大地上-${civilDay(data.settings.timezone)}.json`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       notice("备份已导出，包含原始媒体内容");
