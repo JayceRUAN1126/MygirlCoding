@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import {
   AnimatePresence,
@@ -22,7 +22,6 @@ import {
   CalendarHeart,
   LockKeyhole,
   X,
-  Upload,
   Check,
   ChevronRight,
   LogOut,
@@ -31,7 +30,6 @@ import {
   Play,
   Pencil,
   Trash2,
-  Sparkles,
   Camera,
   Flower2,
   Clock3,
@@ -148,6 +146,7 @@ function Modal({
   wide?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
   useEffect(() => {
     ref.current?.showModal();
     const previous = document.body.style.overflow;
@@ -158,6 +157,7 @@ function Modal({
   }, []);
   return (
     <dialog
+      aria-labelledby={titleId}
       className={`modal ${wide ? "wide" : ""}`}
       ref={ref}
       onCancel={(e) => {
@@ -177,7 +177,7 @@ function Modal({
         <header>
           <div>
             <span className="eyebrow">A MOMENT TO KEEP</span>
-            <h2>{title}</h2>
+            <h2 id={titleId}>{title}</h2>
           </div>
           <button className="icon-button" aria-label="关闭" onClick={onClose}>
             <X size={20} />
@@ -383,6 +383,14 @@ function Home() {
   const [error, setError] = useState("");
   const [toast, setToast] = useState("");
   const [menu, setMenu] = useState(false);
+  useEffect(() => {
+    if (!menu) return;
+    const closeMenu = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenu(false);
+    };
+    window.addEventListener("keydown", closeMenu);
+    return () => window.removeEventListener("keydown", closeMenu);
+  }, [menu]);
   const [composer, setComposer] = useState<{
     category: Category;
     entry?: Memory;
