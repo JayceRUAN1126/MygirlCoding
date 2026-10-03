@@ -39,7 +39,7 @@ Personal dates, login emails, credentials, uploaded media and user records do no
 
 1. Create a Free project and run `supabase/schema.sql` once in the SQL Editor.
 2. Create the intended users in **Authentication → Users**. Use the dashboard's create-user form and set their passwords yourself. The app does not offer public registration.
-3. Create a household and add only the intended user IDs to `household_members`. Use the template in `supabase/bootstrap.example.sql`; replace placeholders locally, not in a public commit.
+3. Create a household and add only the intended user IDs to `household_members`. Use the template in `supabase/bootstrap.example.sql`; replace placeholders locally, not in a public commit. Alternatively, run `supabase/approved-members.sql` once and add the intended email/household pairs to the private `allowed_members` table. Its trigger attaches only confirmed, pre-approved accounts when they are created or confirmed.
 4. In **Authentication → Sign In / Providers**, disable new user signups. Existing users can still sign in.
 5. Copy `.env.example` to `.env.local`, setting the project URL and publishable key (or legacy anon key). Never use the secret/service-role key in the browser.
 
