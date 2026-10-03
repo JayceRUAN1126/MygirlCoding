@@ -28,7 +28,10 @@ export type Tracker = {
   note: string;
   created_at: string;
 };
+export type Atmosphere = "coast" | "dawn" | "night";
 export type Settings = {
+  atmosphere?: Atmosphere;
+  ambientMotion?: boolean;
   coverMediaId?: string;
   startDate: string;
   names: string;

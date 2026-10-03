@@ -1,12 +1,12 @@
-import { useRef } from "react";
-import {
-  motion,
-  useReducedMotion,
-  useScroll,
-  useTransform,
-} from "motion/react";
+import { useState } from "react";
+import type { ReactNode, PointerEvent } from "react";
+import { motion, useReducedMotion, useSpring } from "motion/react";
 import {
   ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  CalendarHeart,
+  MoveUpRight,
   ArrowUpRight,
   Plus,
   Camera,
@@ -21,14 +21,15 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { Category, Memory, Snapshot } from "./types";
+import { SeaScene, SceneControls, defaultCover } from "./Atmosphere";
+import type { Appearance } from "./Atmosphere";
+export { SeaScene, defaultCover } from "./Atmosphere";
 import { categoryLabels } from "./types";
 import { age, anniversary, daysBetween } from "./dates.mjs";
 import { CatArt } from "./Art";
 
 export type Page =
   "dashboard" | "album" | "diary" | "care" | "mini" | "settings";
-export const defaultCover =
-  import.meta.env.BASE_URL + "images/sea-at-dusk.webp";
 const prettyDate = (value: string) => value.replaceAll("-", ".");
 const categoryIcons: Record<Category, LucideIcon> = {
   daily: Coffee,
@@ -52,48 +53,138 @@ export function Brand() {
   );
 }
 
-export function SeaScene({
-  src = defaultCover,
-  alt = "",
+function DepthObject({
   children,
-  className = "",
+  className,
+  enabled,
 }: {
-  src?: string;
-  alt?: string;
-  children?: React.ReactNode;
-  className?: string;
+  children: ReactNode;
+  className: string;
+  enabled: boolean;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start start", "end start"],
-  });
-  const y = useTransform(scrollYProgress, [0, 1], ["0%", "14%"]);
+  const rotateX = useSpring(0, { stiffness: 100, damping: 22 });
+  const rotateY = useSpring(0, { stiffness: 100, damping: 22 });
+  function move(event: PointerEvent<HTMLDivElement>) {
+    if (!enabled || reduce || event.pointerType === "touch") return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    rotateX.set((0.5 - (event.clientY - rect.top) / rect.height) * 7);
+    rotateY.set(((event.clientX - rect.left) / rect.width - 0.5) * 9);
+  }
   return (
-    <div ref={ref} className={"sea-scene " + className}>
-      <motion.div
-        className="scene-image"
-        style={reduce ? undefined : { y }}
-        initial={reduce ? false : { scale: 1.065 }}
-        animate={{ scale: 1 }}
-        transition={{ duration: 1.7, ease: [0.2, 0.6, 0.2, 1] }}
-      >
-        <img
-          src={src}
-          alt={alt}
-          fetchPriority="high"
-          onError={(event) => {
-            if (
-              event.currentTarget.src !==
-              new URL(defaultCover, location.href).href
-            )
-              event.currentTarget.src = defaultCover;
-          }}
-        />
-      </motion.div>
-      <div className="scene-shade" />
+    <motion.div
+      className={className}
+      style={
+        enabled && !reduce
+          ? { rotateX, rotateY, transformPerspective: 1200 }
+          : { rotateX: 0, rotateY: 0 }
+      }
+      onPointerMove={move}
+      onPointerLeave={() => {
+        rotateX.set(0);
+        rotateY.set(0);
+      }}
+    >
       {children}
+    </motion.div>
+  );
+}
+
+function MomentStack({
+  memories,
+  cover,
+  open,
+  chooseCover,
+  create,
+  ambientMotion,
+}: {
+  memories: Memory[];
+  cover?: string;
+  open: (m: Memory) => void;
+  chooseCover: () => void;
+  create: (c: Category) => void;
+  ambientMotion: boolean;
+}) {
+  const photos = memories.filter((m) =>
+    m.media.some((f) => f.type.startsWith("image/")),
+  );
+  const [index, setIndex] = useState(0);
+  const currentIndex = photos.length ? Math.min(index, photos.length - 1) : 0;
+  const memory = photos[currentIndex];
+  const image = memory?.media.find((f) => f.type.startsWith("image/"));
+  return (
+    <div className="moment-stage">
+      <span className="moment-orbit" aria-hidden="true" />
+      <span className="moment-orbit orbit-two" aria-hidden="true" />
+      <DepthObject className="moment-stack" enabled={ambientMotion}>
+        <div className="moment-paper paper-back" aria-hidden="true" />
+        <div className="moment-paper paper-middle" aria-hidden="true" />
+        <button
+          className="moment-paper paper-front"
+          onClick={() => (memory ? open(memory) : chooseCover())}
+          aria-label={memory ? "打开回忆：" + memory.title : "换成我们的照片"}
+        >
+          <div className="moment-photo">
+            <img
+              key={image?.id || "cover"}
+              src={image?.url || cover || defaultCover}
+              alt={memory ? memory.title : "海边晚霞，封面示意"}
+            />
+            <span className="moment-photo-open">
+              <ArrowUpRight size={21} />
+            </span>
+          </div>
+          <div className="moment-caption">
+            <span>
+              <small>
+                {memory ? prettyDate(memory.date) : "OUR NEXT CHAPTER"}
+              </small>
+              <strong>{memory ? memory.title : "换成我们的照片"}</strong>
+            </span>
+            <Heart size={21} strokeWidth={1} />
+          </div>
+        </button>
+      </DepthObject>
+      <button className="floating-note" onClick={() => create("thought")}>
+        <span className="note-pin" aria-hidden="true" />
+        <BookHeart size={17} strokeWidth={1.3} />
+        <span>
+          今天的小事，
+          <br />
+          也想听你说。
+        </span>
+        <MoveUpRight size={15} />
+      </button>
+      <div className="moment-pagination">
+        {photos.length > 1 ? (
+          <>
+            <button
+              aria-label="上一张回忆照片"
+              onClick={() =>
+                setIndex((currentIndex - 1 + photos.length) % photos.length)
+              }
+            >
+              <ArrowLeft size={16} />
+            </button>
+            <span aria-live="polite">
+              {String(currentIndex + 1).padStart(2, "0")} /{" "}
+              {String(photos.length).padStart(2, "0")}
+            </span>
+            <button
+              aria-label="下一张回忆照片"
+              onClick={() => setIndex((currentIndex + 1) % photos.length)}
+            >
+              <ArrowRight size={16} />
+            </button>
+          </>
+        ) : (
+          <span>
+            {photos.length
+              ? "最近的一张 · 点击打开"
+              : "封面示意 · 等你们的第一张照片"}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -106,6 +197,9 @@ export function Dashboard({
   create,
   open,
   chooseCover,
+  appearance,
+  changeAppearance,
+  appearanceBusy,
 }: {
   data: Snapshot;
   today: string;
@@ -114,6 +208,9 @@ export function Dashboard({
   create: (c: Category) => void;
   open: (m: Memory) => void;
   chooseCover: () => void;
+  appearance: Appearance;
+  changeAppearance: (value: Partial<Appearance>) => void;
+  appearanceBusy: boolean;
 }) {
   const { settings, memories } = data;
   const days = settings.startDate
@@ -144,109 +241,184 @@ export function Dashboard({
   const reduce = useReducedMotion();
   return (
     <>
-      <section className="story-hero" aria-label="我们的故事与纪念日">
+      <section className="depth-hero" aria-label="我们的故事与纪念日">
         <SeaScene
           src={cover?.url}
           alt={cover ? "我们选定的相册封面" : "海面与晚霞"}
+          {...appearance}
         >
-          <div className="hero-topline">
-            <span>
-              <span className="light-dot" /> {settings.names} 的私密影集
-            </span>
-            <button onClick={chooseCover}>
-              <ImagePlus size={15} />
-              选择封面
-            </button>
-          </div>
-          <div className="hero-heading">
-            <motion.h1
-              initial={
-                reduce ? false : { opacity: 0, y: 28, filter: "blur(8px)" }
-              }
-              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              transition={{
-                duration: 1,
-                delay: 0.12,
-                ease: [0.22, 1, 0.36, 1],
-              }}
-            >
-              还要一起，
-              <br />
-              过很多个今天。
-            </motion.h1>
-            <motion.p
-              initial={reduce ? false : { opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.45 }}
-            >
-              今天的小事，也想记下来。
-            </motion.p>
-            <button className="hero-record" onClick={() => create("daily")}>
-              <Plus size={17} />
-              <span>记下今天</span>
-            </button>
-          </div>
-          <div className="hero-bottom">
-            <div className="hero-origin">
-              <span className="origin-line" />
+          <div className="depth-hero-inner">
+            <div className="depth-topline">
               <span>
-                我们的第一天
-                <strong>
-                  {settings.startDate
-                    ? prettyDate(settings.startDate)
-                    : "等我们写下第一天"}
-                </strong>
+                <span className="light-dot" /> {settings.names} 的私密影集
+              </span>
+              <span className="depth-volume">
+                OUR LITTLE DAYS <i /> EST.{" "}
+                {settings.startDate ? settings.startDate.slice(0, 4) : "NOW"}
               </span>
             </div>
-            <div className="together-clock">
-              <div className="together-days">
-                <strong>{days.toLocaleString()}</strong>
-                <span>
-                  天<small>在一起</small>
-                </span>
+            <div className="depth-composition">
+              <div className="depth-heading">
+                <motion.div
+                  initial={reduce ? false : { opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <p className="depth-eyebrow">
+                    A little space. A life together.
+                  </p>
+                  <h1>
+                    还要一起，
+                    <br />
+                    过很多个今天<span>。</span>
+                  </h1>
+                  <p className="depth-description">
+                    照片留住瞬间，我们慢慢过日子。
+                    <br />
+                    今天的小事，也想记下来。
+                  </p>
+                  <div className="depth-actions">
+                    <button
+                      className="depth-primary"
+                      onClick={() => create("daily")}
+                    >
+                      <Plus size={18} />
+                      记下今天
+                      <ArrowUpRight size={17} />
+                    </button>
+                    <button
+                      className="depth-secondary"
+                      onClick={() => navigate("album")}
+                    >
+                      打开相册
+                      <ArrowRight size={16} />
+                    </button>
+                  </div>
+                </motion.div>
+                <SceneControls
+                  {...appearance}
+                  onChange={changeAppearance}
+                  chooseCover={chooseCover}
+                  busy={appearanceBusy}
+                  customCover={!!cover}
+                />
               </div>
-              <span className="together-time">
-                {time}
-                <span>明天也一起</span>
-              </span>
+              <MomentStack
+                memories={latest}
+                cover={cover?.url}
+                open={open}
+                chooseCover={chooseCover}
+                create={create}
+                ambientMotion={appearance.ambientMotion}
+              />
             </div>
-            <button
-              className="anniversary-note"
-              onClick={() => navigate("settings")}
-            >
+            <div className="depth-bottomline">
               <span>
-                {next ? next.years + " 周年纪念日" : "我们的纪念日"}
-                <ArrowUpRight size={14} />
+                {appearance.ambientMotion && !reduce
+                  ? "轻触背景，让光停在这里"
+                  : "安静地，看一会儿"}
               </span>
-              <strong>
-                {next
-                  ? next.days === 0
-                    ? "就是今天"
-                    : "还有 " + next.days + " 天"
-                  : "设置第一天"}
-              </strong>
-              <small>{next ? prettyDate(next.date) : "从相遇开始"}</small>
-            </button>
+              <button
+                onClick={() =>
+                  document
+                    .getElementById("collected-moments")
+                    ?.scrollIntoView({
+                      behavior: reduce ? "instant" : "smooth",
+                      block: "start",
+                    })
+                }
+              >
+                往下，都是我们
+                <ArrowDown size={14} />
+              </button>
+            </div>
           </div>
-          <button
-            className="scroll-cue"
-            aria-label="浏览我们的回忆"
-            onClick={() =>
-              document.getElementById("collected-moments")?.scrollIntoView({
-                behavior: reduce ? "instant" : "smooth",
-                block: "start",
-              })
-            }
-          >
-            <ArrowDown size={16} />
-          </button>
         </SeaScene>
       </section>
+      <section className="depth-ledger" aria-label="在一起的日子">
+        <div className="ledger-together">
+          <div className="ledger-label">
+            <span className="ledger-dot" />
+            我们的第
+          </div>
+          <div className="ledger-number">
+            <strong>{days.toLocaleString()}</strong>
+            <span>
+              天<small>明天也一起</small>
+            </span>
+          </div>
+          <div className="ledger-baseline">
+            <span>
+              {settings.startDate
+                ? "从 " + prettyDate(settings.startDate) + " 开始"
+                : "在设置中写下我们的第一天"}
+            </span>
+            <time>{time}</time>
+          </div>
+        </div>
+        <button
+          className="ledger-anniversary"
+          onClick={() => navigate("settings")}
+        >
+          <span className="ledger-label">
+            <CalendarHeart size={17} />
+            {next ? next.years + " 周年纪念日" : "我们的纪念日"}
+            <ArrowUpRight size={16} />
+          </span>
+          <strong>
+            {next ? (
+              next.days === 0 ? (
+                "就是今天"
+              ) : (
+                <>
+                  还有 <em>{next.days}</em> 天
+                </>
+              )
+            ) : (
+              "写下第一天"
+            )}
+          </strong>
+          <span className="ledger-baseline">
+            {next ? prettyDate(next.date) : "每一年，都记得"}
+            <span className="anniversary-rings" aria-hidden="true">
+              ◎
+            </span>
+          </span>
+        </button>
+        <button className="ledger-mini" onClick={() => navigate("mini")}>
+          <span className="ledger-label">
+            <PawPrint size={17} />
+            mini 也在长大
+            <ArrowUpRight size={16} />
+          </span>
+          <strong>
+            {petAge ? (
+              <>
+                <em>
+                  {petAge.years ? petAge.years + " 岁 " : ""}
+                  {petAge.months}
+                </em>{" "}
+                个月
+              </>
+            ) : (
+              "认识 mini"
+            )}
+          </strong>
+          <span className="ledger-baseline">
+            {petAge
+              ? "来到世界的第 " + petAge.days + " 天"
+              : "我们的第三位家人"}
+            <PawPrint className="ledger-paw" size={42} strokeWidth={0.6} />
+          </span>
+        </button>
+      </section>
 
-      <div className="story-body" id="collected-moments">
+      <div className="story-body depth-story" id="collected-moments">
         <div className="collection-intro">
           <div>
-            <p className="section-caption">Our collection</p>
+            <p className="section-caption">
+              <span className="chapter-number">01</span> Our collection
+            </p>
             <h2>
               当时没觉得，
               <br />
@@ -349,7 +521,9 @@ export function Dashboard({
         </section>
         <section className="daily-sections">
           <div className="daily-invitation">
-            <p className="section-caption">Between us</p>
+            <p className="section-caption">
+              <span className="chapter-number">02</span> Between us
+            </p>
             <h2>有句话，想跟你说。</h2>
             <p>开心的、不开心的，都可以写。</p>
             <div className="feeling-list">

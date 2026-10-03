@@ -40,6 +40,8 @@ import type { LucideIcon } from "lucide-react";
 import { CatArt } from "./Art";
 import { Brand, Dashboard, MemoryCard, SeaScene, defaultCover } from "./Story";
 import type { Page } from "./Story";
+import { SceneControls } from "./Atmosphere";
+import type { Appearance } from "./Atmosphere";
 import type { Category, Memory, Settings, Snapshot } from "./types";
 import { categoryLabels, defaults } from "./types";
 import { age, civilDay, periodStats, workRate } from "./dates.mjs";
@@ -196,6 +198,21 @@ function Empty({
   );
 }
 function Login({ notConfigured = false }: { notConfigured?: boolean }) {
+  const [appearance, setAppearance] = useState<Appearance>(() => {
+    try {
+      const saved = JSON.parse(
+        localStorage.getItem("our-little-days-login-appearance") || "null",
+      );
+      if (saved && ["coast", "dawn", "night"].includes(saved.atmosphere))
+        return {
+          atmosphere: saved.atmosphere,
+          ambientMotion: saved.ambientMotion !== false,
+        };
+    } catch {
+      /* The login page also works when browser storage is unavailable. */
+    }
+    return { atmosphere: "coast", ambientMotion: true };
+  });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   async function submit(e: FormEvent<HTMLFormElement>) {
@@ -216,8 +233,8 @@ function Login({ notConfigured = false }: { notConfigured?: boolean }) {
     }
   }
   return (
-    <main className="login">
-      <SeaScene className="login-scene" alt="海面与晚霞">
+    <main className="login depth-login" data-atmosphere={appearance.atmosphere}>
+      <SeaScene className="login-scene" alt="海面与晚霞" {...appearance}>
         <Brand />
         <div className="login-heading">
           <p>For all the days to come.</p>
@@ -233,8 +250,21 @@ function Login({ notConfigured = false }: { notConfigured?: boolean }) {
           </span>
         </div>
         <div className="login-note">
-          <span>Every day, with you.</span>
-          <span>慢慢喜欢你</span>
+          <SceneControls
+            {...appearance}
+            onChange={(patch) => {
+              const next = { ...appearance, ...patch };
+              setAppearance(next);
+              try {
+                localStorage.setItem(
+                  "our-little-days-login-appearance",
+                  JSON.stringify(next),
+                );
+              } catch {
+                /* Appearance is optional. */
+              }
+            }}
+          />
         </div>
       </SeaScene>
       <div className="login-panel">
@@ -358,6 +388,10 @@ function Home() {
   const [error, setError] = useState("");
   const [toast, setToast] = useState("");
   const [coverPicker, setCoverPicker] = useState(false);
+  const [appearanceDraft, setAppearanceDraft] = useState<Appearance | null>(
+    null,
+  );
+  const [appearanceBusy, setAppearanceBusy] = useState(false);
   const [composer, setComposer] = useState<{
     category: Category;
     entry?: Memory;
@@ -403,6 +437,26 @@ function Home() {
     return () => clearTimeout(t);
   }, [toast]);
   const today = civilDay(snapshot.settings.timezone, now);
+  const appearance: Appearance = appearanceDraft || {
+    atmosphere: snapshot.settings.atmosphere || "coast",
+    ambientMotion: snapshot.settings.ambientMotion !== false,
+  };
+  async function changeAppearance(patch: Partial<Appearance>) {
+    if (appearanceBusy) return;
+    const next = { ...appearance, ...patch };
+    setAppearanceDraft(next);
+    setAppearanceBusy(true);
+    try {
+      await store.saveSettings({ ...stateRef.current.settings, ...next });
+      await refresh();
+      setToast("背景偏好已保存");
+    } catch (e) {
+      setError(errorText(e));
+    } finally {
+      setAppearanceDraft(null);
+      setAppearanceBusy(false);
+    }
+  }
   const navigate = (p: Page) => {
     setPage(p);
     window.scrollTo({ top: 0, behavior: "instant" });
@@ -415,7 +469,11 @@ function Home() {
   }
   const newMemory = (category: Category = "daily") => setComposer({ category });
   return (
-    <div className={"app-shell page-" + page}>
+    <div
+      className={"app-shell depth-app page-" + page}
+      data-atmosphere={appearance.atmosphere}
+      data-motion={appearance.ambientMotion && !reduce ? "on" : "off"}
+    >
       <a className="skip-link" href="#main-content">
         跳到主要内容
       </a>
@@ -549,6 +607,9 @@ function Home() {
                     create={newMemory}
                     open={setDetail}
                     chooseCover={() => setCoverPicker(true)}
+                    appearance={appearance}
+                    changeAppearance={changeAppearance}
+                    appearanceBusy={appearanceBusy}
                   />
                 )}
                 {(page === "album" || page === "diary" || page === "mini") && (
@@ -612,7 +673,11 @@ function Home() {
             newMemory();
           }}
           onSave={async (coverMediaId) => {
-            await store.saveSettings({ ...snapshot.settings, coverMediaId });
+            await store.saveSettings({
+              ...stateRef.current.settings,
+              coverMediaId,
+              atmosphere: "coast",
+            });
             await refresh();
             setCoverPicker(false);
             setToast("首页封面已更新");

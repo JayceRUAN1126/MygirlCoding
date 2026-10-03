@@ -13,12 +13,14 @@ A private, responsive memory space for two people and their cat. Built with Reac
 - Supabase email/password login, shared household, private storage, row-level security and realtime refresh.
 - Desktop, tablet and phone layouts; respects reduced-motion preference.
 - Personal homepage covers selected from private album photos; the decorative sea cover is used until a photo is selected. Selecting a cover saves only its media ID in the household settings.
+- Switchable sea, dawn and night atmospheres with pointer-following light, tap ripples, scroll parallax and a gently tilting photo stack. Background and motion preferences are saved in the private household settings; the public login page stores only its own appearance preference in the browser.
+- A layered dashboard with stacked photos, a journal note and overlapping relationship, anniversary and pet panels. The photo stack opens real memories and can browse between photo entries when several exist.
 
 ## Visual direction
 
 The redesign draws on image-led composition observed on [Awwwards](https://www.awwwards.com/) and [Tengile MalaMala](https://tengilemalamala.com/), visual browsing from [Designspiration](https://www.designspiration.com/), and the planning and critique methods in Anthropic's [frontend-design](https://github.com/anthropics/skills/tree/main/skills/frontend-design) guidance. The implementation is original; reference-site code and imagery were not copied.
 
-The default sea photograph is by Sebastien Gabriel under the Unsplash License; see `public/images/README.md`. It is decorative and does not represent a personal memory. Uploaded photos remain in private storage. `src/Story.tsx` contains the visual storytelling and album components; `src/App.tsx` owns authentication and the data-editing flows.
+The default sea photograph is by Sebastien Gabriel under the Unsplash License; see `public/images/README.md`. It is decorative and does not represent a personal memory. Dawn and night backgrounds are original CSS compositions, with no additional images or rendering dependencies. Uploaded photos remain in private storage. `src/Story.tsx` contains the dashboard and album components; `src/Atmosphere.tsx` and `src/depth.css` define the interactive scenery and layered layout; `src/App.tsx` owns authentication and the data-editing flows. Background motion can be paused and respects the system's reduced-motion preference. Touch scrolling remains native.
 
 ## Development
 
