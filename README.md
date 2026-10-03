@@ -1,6 +1,6 @@
 # 慢慢喜欢你 · Our Little Days
 
-A private, responsive memory space for two people and their cat. Built with React, TypeScript, Vite, Motion and Supabase. The interface combines warm editorial typography with spring transitions, a responsive photo gallery, private media, and direct feedback on every save.
+A private, responsive memory space for two people and their cat. Built with React, TypeScript, Vite, Motion and Supabase. The interface uses a cinematic photographic cover, quiet blue-gray surfaces, expressive typography, a floating navigation bar, a mobile navigation dock, and direct feedback on every save.
 
 ## What works
 
@@ -12,6 +12,13 @@ A private, responsive memory space for two people and their cat. Built with Reac
 - Editing, deletion with confirmation, search/filtering, and full JSON export including media.
 - Supabase email/password login, shared household, private storage, row-level security and realtime refresh.
 - Desktop, tablet and phone layouts; respects reduced-motion preference.
+- Personal homepage covers selected from private album photos; the decorative sea cover is used until a photo is selected. Selecting a cover saves only its media ID in the household settings.
+
+## Visual direction
+
+The redesign draws on image-led composition observed on [Awwwards](https://www.awwwards.com/) and [Tengile MalaMala](https://tengilemalamala.com/), visual browsing from [Designspiration](https://www.designspiration.com/), and the planning and critique methods in Anthropic's [frontend-design](https://github.com/anthropics/skills/tree/main/skills/frontend-design) guidance. The implementation is original; reference-site code and imagery were not copied.
+
+The default sea photograph is by Sebastien Gabriel under the Unsplash License; see `public/images/README.md`. It is decorative and does not represent a personal memory. Uploaded photos remain in private storage. `src/Story.tsx` contains the visual storytelling and album components; `src/App.tsx` owns authentication and the data-editing flows.
 
 ## Development
 

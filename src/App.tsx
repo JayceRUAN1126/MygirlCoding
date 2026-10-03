@@ -1,13 +1,6 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
-import {
-  AnimatePresence,
-  motion,
-  useReducedMotion,
-  useMotionValue,
-  useSpring,
-  useTransform,
-} from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   Heart,
   LayoutDashboard,
@@ -19,7 +12,6 @@ import {
   Plus,
   ArrowUpRight,
   ArrowRight,
-  CalendarHeart,
   LockKeyhole,
   X,
   Check,
@@ -36,7 +28,6 @@ import {
   Download,
   Cloud,
   ShieldCheck,
-  Menu,
   Coffee,
   MessageCircleHeart,
   LoaderCircle,
@@ -46,20 +37,14 @@ import {
   Minimize2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { CatArt, SunsetArt, FlowerArt } from "./Art";
-import type { Category, Memory, Settings, Snapshot, Tracker } from "./types";
+import { CatArt } from "./Art";
+import { Brand, Dashboard, MemoryCard, SeaScene, defaultCover } from "./Story";
+import type { Page } from "./Story";
+import type { Category, Memory, Settings, Snapshot } from "./types";
 import { categoryLabels, defaults } from "./types";
-import {
-  age,
-  anniversary,
-  civilDay,
-  daysBetween,
-  periodStats,
-  workRate,
-} from "./dates.mjs";
+import { age, civilDay, periodStats, workRate } from "./dates.mjs";
 import * as store from "./store";
 
-type Page = "dashboard" | "album" | "diary" | "care" | "mini" | "settings";
 const pages: { id: Page; label: string; en: string; icon: LucideIcon }[] = [
   {
     id: "dashboard",
@@ -97,18 +82,6 @@ const errorText = (error: unknown) =>
       ? String(error.message)
       : "暂时没有保存成功，请重试。";
 const localAllowed = import.meta.env.DEV;
-function Brand() {
-  return (
-    <div className="brand">
-      <span className="brand-symbol">
-        <Heart size={21} strokeWidth={1.6} />
-      </span>
-      <div>
-        慢慢喜欢你<small>OUR LITTLE DAYS</small>
-      </div>
-    </div>
-  );
-}
 function Button({
   children,
   onClick,
@@ -148,11 +121,17 @@ function Modal({
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   useEffect(() => {
-    ref.current?.showModal();
+    const dialog = ref.current;
+    const previousFocus = document.activeElement;
+    dialog?.showModal();
+    dialog?.querySelector<HTMLElement>("[data-initial-focus]")?.focus();
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = previous;
+      dialog?.close();
+      if (previousFocus instanceof HTMLElement && previousFocus.isConnected)
+        previousFocus.focus({ preventScroll: true });
     };
   }, []);
   return (
@@ -176,7 +155,6 @@ function Modal({
       >
         <header>
           <div>
-            <span className="eyebrow">A MOMENT TO KEEP</span>
             <h2 id={titleId}>{title}</h2>
           </div>
           <button className="icon-button" aria-label="关闭" onClick={onClose}>
@@ -190,8 +168,8 @@ function Modal({
 }
 function Empty({
   icon: Icon = Camera,
-  title = "从今天开始，收藏我们的故事",
-  text = "随手拍下的照片，也会成为以后舍不得的回忆。",
+  title = "第一张照片，就从今天开始。",
+  text = "不用等一个特别的日子，今天就可以留一张。",
   action,
   onClick,
 }: {
@@ -239,98 +217,95 @@ function Login({ notConfigured = false }: { notConfigured?: boolean }) {
   }
   return (
     <main className="login">
-      <div className="login-art">
+      <SeaScene className="login-scene" alt="海面与晚霞">
         <Brand />
-        <div>
-          <span className="eyebrow">A LITTLE WORLD, JUST FOR TWO</span>
+        <div className="login-heading">
+          <p>For all the days to come.</p>
           <h1>
-            所有平凡的日子，
+            关于我们，
             <br />
-            因为你而<em>闪闪发光。</em>
+            还想写很久。
           </h1>
-          <p>
-            把照片、心里话，还有那些小小的幸福，
+          <span>
+            最近的照片，没说完的话。
             <br />
-            好好收藏在这里。
+            都放在这里。
+          </span>
+        </div>
+        <div className="login-note">
+          <span>Every day, with you.</span>
+          <span>慢慢喜欢你</span>
+        </div>
+      </SeaScene>
+      <div className="login-panel">
+        <section className="login-form">
+          <span className="lock-mark">
+            <LockKeyhole size={22} strokeWidth={1.3} />
+          </span>
+          <p className="section-caption">A place for us</p>
+          <h2>{notConfigured ? "小家正在准备中。" : "你来啦。"}</h2>
+          <p>
+            {notConfigured
+              ? "等我们安顿好，一起回来。"
+              : "登录，看看最近的我们。"}
           </p>
-        </div>
-        <div className="login-sunset">
-          <SunsetArt />
-        </div>
-        <span className="login-note">LOVE IS IN THE LITTLE THINGS.</span>
-      </div>
-      <section className="login-form">
-        <span className="lock-mark">
-          <LockKeyhole size={26} />
-        </span>
-        <span className="eyebrow">WELCOME HOME</span>
-        <h2>
-          {notConfigured
-            ? "我们的小家，正在准备中"
-            : "欢迎回到，我们的小世界。"}
-        </h2>
-        <p>
-          {notConfigured
-            ? "公网入口已就绪。连接双人账户后，就可以开始收藏回忆。"
-            : "这里的每一段回忆，都只属于你们两个人。"}
-        </p>
-        {notConfigured ? (
-          <div className="setup-note">
-            <ShieldCheck size={21} />
-            <span>
-              私人空间尚未开放
-              <br />
-              <small>请由管理员完成账户配置后再登录。</small>
-            </span>
-          </div>
-        ) : (
-          <form onSubmit={submit}>
-            <label>
-              邮箱
-              <input
-                name="email"
-                type="email"
-                autoComplete="username"
-                placeholder="你的登录邮箱"
-                required
-              />
-            </label>
-            <label>
-              密码
-              <input
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                placeholder="输入密码"
-                minLength={6}
-                required
-              />
-            </label>
-            {error && (
-              <p role="alert" className="form-error">
-                {error === "Invalid login credentials"
-                  ? "邮箱或密码不正确，请再试一次。"
-                  : error}
-              </p>
-            )}
-            <Button type="submit" disabled={busy}>
-              {busy ? (
-                <LoaderCircle className="spin" size={17} />
-              ) : (
-                <Heart size={17} />
+          {notConfigured ? (
+            <div className="setup-note">
+              <ShieldCheck size={21} />
+              <span>
+                私人空间尚未开放
+                <br />
+                <small>请由管理员完成账户配置后再登录。</small>
+              </span>
+            </div>
+          ) : (
+            <form onSubmit={submit}>
+              <label>
+                邮箱
+                <input
+                  name="email"
+                  type="email"
+                  autoComplete="username"
+                  placeholder="你的登录邮箱"
+                  required
+                />
+              </label>
+              <label>
+                密码
+                <input
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  placeholder="输入密码"
+                  minLength={6}
+                  required
+                />
+              </label>
+              {error && (
+                <p role="alert" className="form-error">
+                  {error === "Invalid login credentials"
+                    ? "邮箱或密码不正确，请检查后重试。"
+                    : error}
+                </p>
               )}
-              回到我们的小家
-              <ArrowRight size={16} />
-            </Button>
-            <p className="micro">
-              仅限已加入空间的两位成员。账户由管理员创建。
-            </p>
-          </form>
-        )}
-        <div className="login-footer">
-          <LockKeyhole size={12} /> 照片、日记与记录，仅你们可见
-        </div>
-      </section>
+              <Button type="submit" disabled={busy}>
+                {busy ? (
+                  <LoaderCircle className="spin" size={17} />
+                ) : (
+                  <Heart size={17} strokeWidth={1.5} />
+                )}
+                进入我们的空间
+                <ArrowRight size={16} />
+              </Button>
+              <p className="micro">使用管理员为你创建的账户登录。</p>
+            </form>
+          )}
+          <div className="login-footer">
+            <span className="status-dot" />
+            照片、日记与记录，仅你们可见
+          </div>
+        </section>
+      </div>
     </main>
   );
 }
@@ -382,15 +357,7 @@ function Home() {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState("");
   const [toast, setToast] = useState("");
-  const [menu, setMenu] = useState(false);
-  useEffect(() => {
-    if (!menu) return;
-    const closeMenu = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMenu(false);
-    };
-    window.addEventListener("keydown", closeMenu);
-    return () => window.removeEventListener("keydown", closeMenu);
-  }, [menu]);
+  const [coverPicker, setCoverPicker] = useState(false);
   const [composer, setComposer] = useState<{
     category: Category;
     entry?: Memory;
@@ -438,157 +405,118 @@ function Home() {
   const today = civilDay(snapshot.settings.timezone, now);
   const navigate = (p: Page) => {
     setPage(p);
-    setMenu(false);
     window.scrollTo({ top: 0, behavior: "instant" });
   };
   async function saved() {
     await refresh();
     setComposer(null);
     setTracker(null);
-    setToast(store.cloud ? "已经收进我们共同的回忆里" : "已保存在当前浏览器");
+    setToast(store.cloud ? "这段回忆，存好了" : "已保存在当前浏览器");
   }
-  const current = pages.find((p) => p.id === page);
   const newMemory = (category: Category = "daily") => setComposer({ category });
   return (
-    <div className="app-shell">
-      <aside className={`sidebar ${menu ? "open" : ""}`}>
-        <Brand />
-        <div className="side-caption">我们的秘密基地</div>
-        <nav aria-label="主导航">
+    <div className={"app-shell page-" + page}>
+      <a className="skip-link" href="#main-content">
+        跳到主要内容
+      </a>
+      <header className="site-header">
+        <button
+          className="brand-home"
+          aria-label="返回我们的日常"
+          onClick={() => navigate("dashboard")}
+        >
+          <Brand />
+        </button>
+        <nav className="primary-nav" aria-label="主导航">
           {pages.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               className={page === id ? "active" : ""}
+              aria-current={page === id ? "page" : undefined}
+              aria-label={label}
               onClick={() => navigate(id)}
             >
-              <Icon size={19} strokeWidth={1.65} />
-              <span>{label}</span>
-              {page === id && <span className="nav-dot" />}
+              {page === id && (
+                <motion.span
+                  className="nav-selection"
+                  layoutId="navigation"
+                  transition={{ type: "spring", stiffness: 400, damping: 36 }}
+                />
+              )}
+              <Icon size={18} strokeWidth={1.6} />
+              <span>
+                {id === "dashboard"
+                  ? "日常"
+                  : id === "album"
+                    ? "相册"
+                    : id === "diary"
+                      ? "日记"
+                      : id === "care"
+                        ? "关心"
+                        : "mini"}
+              </span>
             </button>
           ))}
         </nav>
-        <div className="sidebar-bottom">
-          <div className="little-note">
-            <span className="note-spark">✧</span>
-            <p>
-              日子很长，
-              <br />
-              我们慢慢喜欢。
-            </p>
-            <span>one day at a time.</span>
-          </div>
+        <div className="header-actions">
+          <span className="private-badge">
+            <LockKeyhole size={12} />
+            只有我们
+          </span>
           <button
-            className={`settings-nav ${page === "settings" ? "active" : ""}`}
+            className={"round-button " + (page === "settings" ? "active" : "")}
+            aria-label="空间设置"
             onClick={() => navigate("settings")}
           >
-            <SettingsIcon size={18} />
-            空间设置
+            <SettingsIcon size={18} strokeWidth={1.6} />
           </button>
-          <div className="members">
-            <div className="avatar-pair">
-              <span>你</span>
-              <span>我</span>
-            </div>
-            <div>
-              <b>{snapshot.settings.names}</b>
-              <small>
-                <LockKeyhole size={10} />
-                只有我们
-              </small>
-            </div>
-            {store.cloud && (
-              <button
-                className="icon-button"
-                aria-label="退出登录"
-                onClick={() => store.supabase!.auth.signOut()}
-              >
-                <LogOut size={15} />
-              </button>
-            )}
-          </div>
+          {store.cloud && (
+            <button
+              className="round-button logout"
+              aria-label="退出登录"
+              onClick={() => store.supabase!.auth.signOut()}
+            >
+              <LogOut size={17} />
+            </button>
+          )}
         </div>
-      </aside>
-      {menu && (
-        <button
-          className="mobile-overlay"
-          aria-label="关闭菜单"
-          onClick={() => setMenu(false)}
-        />
-      )}
+      </header>
       <div className="main-area">
-        <header className="topbar">
-          <div className="breadcrumb">
-            <button
-              className="icon-button mobile-menu"
-              onClick={() => setMenu(!menu)}
-              aria-label="打开菜单"
-            >
-              <Menu size={22} />
-            </button>
-            <Heart size={14} />
-            <span>我们的小世界</span>
-            <ChevronRight size={12} />
-            <b>{current?.label || "空间设置"}</b>
-          </div>
-          <div className="topbar-right">
-            <span className="private-badge">
-              <LockKeyhole size={12} />
-              私密空间
-            </span>
-            <button
-              className="profile-dot"
-              onClick={() => navigate("settings")}
-              aria-label="空间设置"
-            >
-              J
-            </button>
-          </div>
-        </header>
-        <main className="content">
-          <div className="page-heading">
-            <div>
-              <span className="eyebrow">{current?.en || "MAKE IT OURS"}</span>
-              <h1>
-                {page === "dashboard"
-                  ? "今天，也在慢慢喜欢你。"
-                  : current?.label || "让这个小家，更像我们。"}
-                {page === "dashboard" && (
-                  <span className="title-flower">✳</span>
-                )}
-              </h1>
-              <p>
-                {page === "dashboard"
-                  ? "把普通的日子，过成值得收藏的回忆。"
-                  : page === "album"
-                    ? "照片会记得，那些我们不想忘记的瞬间。"
+        <main className="content" id="main-content">
+          {page !== "dashboard" && (
+            <div className="page-heading">
+              <div>
+                <h1>
+                  {page === "album"
+                    ? "镜头里的我们。"
                     : page === "diary"
-                      ? "甜蜜、争执、天马行空。每一种心情，都有地方安放。"
+                      ? "写给我们。"
                       : page === "care"
-                        ? "把关心放进日常，把小习惯慢慢记下来。"
+                        ? "把关心，放进日常。"
+                        : page === "mini"
+                          ? "mini 的小世界。"
+                          : "让这里，更像我们。"}
+                </h1>
+                <p>
+                  {page === "album"
+                    ? "一起走过的路，还有每次镜头转向你。"
+                    : page === "diary"
+                      ? "开心的时候写，不开心的时候也写。"
+                      : page === "care"
+                        ? "慢慢了解彼此的节奏。"
                         : page === "mini"
                           ? "小小的爪印，大大的存在感。"
-                          : "属于我们的名字、日子，和生活节奏。"}
-              </p>
-            </div>
-            {page !== "settings" && page !== "care" && (
-              <Button
-                onClick={() => newMemory(page === "mini" ? "mini" : "daily")}
-              >
-                <Plus size={17} />
-                {page === "diary" ? "写一篇日记" : "记录这一刻"}
-              </Button>
-            )}
-          </div>
-          {!store.cloud && (
-            <div className="local-notice">
-              <span>
-                <span className="status-dot" />
-                本机预览 · 上传内容保存在当前浏览器，暂未同步到另一台设备
-              </span>
-              <button onClick={() => navigate("settings")}>
-                存储说明
-                <ArrowUpRight size={13} />
-              </button>
+                          : "属于我们的名字、日子，和生活习惯。"}
+                </p>
+              </div>
+              {page !== "settings" && page !== "care" && (
+                <Button
+                  onClick={() => newMemory(page === "mini" ? "mini" : "daily")}
+                >
+                  <Plus size={17} />
+                  {page === "diary" ? "写一篇日记" : "记录这一刻"}
+                </Button>
+              )}
             </div>
           )}
           {error && (
@@ -607,10 +535,10 @@ function Home() {
             <AnimatePresence mode="wait">
               <motion.div
                 key={page}
-                initial={reduce ? false : { opacity: 0, y: 10 }}
+                initial={reduce ? false : { opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
+                exit={{ opacity: 0, transition: { duration: 0.12 } }}
+                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
               >
                 {page === "dashboard" && (
                   <Dashboard
@@ -620,6 +548,7 @@ function Home() {
                     navigate={navigate}
                     create={newMemory}
                     open={setDetail}
+                    chooseCover={() => setCoverPicker(true)}
                   />
                 )}
                 {(page === "album" || page === "diary" || page === "mini") && (
@@ -651,14 +580,45 @@ function Home() {
               </motion.div>
             </AnimatePresence>
           )}
+          {!store.cloud && (
+            <div className="local-notice">
+              <span>
+                <span className="status-dot" />
+                本机设计预览 · 内容仅保存在当前浏览器
+              </span>
+              <button onClick={() => navigate("settings")}>
+                存储说明
+                <ArrowUpRight size={13} />
+              </button>
+            </div>
+          )}
           <footer className="site-footer">
-            <span>MADE OF LITTLE MOMENTS & LOTS OF LOVE</span>
+            <span>
+              Our little days. <span className="footer-dash" />{" "}
+              今天、明天，和你。
+            </span>
             <span>
               你、我，还有 mini <Heart size={11} />
             </span>
           </footer>
         </main>
       </div>
+      {coverPicker && (
+        <CoverPicker
+          data={snapshot}
+          onClose={() => setCoverPicker(false)}
+          onCreate={() => {
+            setCoverPicker(false);
+            newMemory();
+          }}
+          onSave={async (coverMediaId) => {
+            await store.saveSettings({ ...snapshot.settings, coverMediaId });
+            await refresh();
+            setCoverPicker(false);
+            setToast("首页封面已更新");
+          }}
+        />
+      )}
       {composer && (
         <Composer
           category={composer.category}
@@ -707,349 +667,97 @@ function Home() {
   );
 }
 
-function HeroPhoto({ onClick }: { onClick: () => void }) {
-  const x = useMotionValue(0),
-    y = useMotionValue(0);
-  const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-9, 9]), {
-    stiffness: 180,
-    damping: 24,
-  });
-  const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [7, -7]), {
-    stiffness: 180,
-    damping: 24,
-  });
-  const reduce = useReducedMotion();
-  return (
-    <motion.button
-      className="hero-photo"
-      style={
-        reduce
-          ? {}
-          : { rotateX, rotateY, rotateZ: 7, transformPerspective: 900 }
-      }
-      whileTap={{ scale: 0.98 }}
-      onPointerMove={(e) => {
-        if (e.pointerType !== "mouse" || reduce) return;
-        const r = e.currentTarget.getBoundingClientRect();
-        x.set((e.clientX - r.left) / r.width - 0.5);
-        y.set((e.clientY - r.top) / r.height - 0.5);
-      }}
-      onPointerLeave={() => {
-        x.set(0);
-        y.set(0);
-      }}
-      onClick={onClick}
-      aria-label="收藏一段新的照片回忆"
-    >
-      <div className="photo-tape" />
-      <SunsetArt />
-      <div>
-        <span>you are my favorite place.</span>
-        <Heart size={15} />
-      </div>
-    </motion.button>
-  );
-}
-function Dashboard({
+function CoverPicker({
   data,
-  today,
-  now,
-  navigate,
-  create,
-  open,
+  onClose,
+  onCreate,
+  onSave,
 }: {
   data: Snapshot;
-  today: string;
-  now: Date;
-  navigate: (p: Page) => void;
-  create: (c: Category) => void;
-  open: (m: Memory) => void;
+  onClose: () => void;
+  onCreate: () => void;
+  onSave: (id: string) => Promise<void>;
 }) {
-  const { settings, memories } = data;
-  const days = settings.startDate
-    ? Math.max(0, daysBetween(settings.startDate, today))
-    : 0;
-  const next = settings.startDate
-    ? anniversary(settings.startDate, today)
-    : { date: today, days: 0, years: 0 };
-  const petAge = age(settings.petBirthday, today);
-  const media = memories.flatMap((m) => m.media);
-  const latest = memories
-    .slice()
-    .sort(
-      (a, b) =>
-        b.date.localeCompare(a.date) ||
-        b.created_at.localeCompare(a.created_at),
-    )
-    .slice(0, 3);
-  const time = new Intl.DateTimeFormat("en-GB", {
-    timeZone: settings.timezone,
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  })
-    .format(now)
-    .split(":");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const photos = data.memories.flatMap((memory) =>
+    memory.media
+      .filter((m) => m.type.startsWith("image/"))
+      .map((media) => ({ ...media, title: memory.title })),
+  );
+  const currentCover = photos.some(
+    (photo) => photo.id === data.settings.coverMediaId,
+  )
+    ? data.settings.coverMediaId
+    : "";
+  async function select(id: string) {
+    setBusy(true);
+    setError("");
+    try {
+      await onSave(id);
+    } catch (e) {
+      setError(errorText(e));
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
-    <>
-      <section className="love-hero">
-        <div className="hero-copy">
-          <span className="overline">
-            <span className="tiny-heart">♥</span> OUR STORY, STILL WRITING
-          </span>
-          <h2>
-            和你在一起的<span className="script-word">每一天</span>
-          </h2>
-          <div className="day-counter">
-            <span>{days.toLocaleString()}</span>
-            <div>
-              天<small>AND COUNTING</small>
-            </div>
-          </div>
-          <div className="live-counter">
-            <span>
-              {time[0]}
-              <small>时</small>
-            </span>
-            <i>:</i>
-            <span>
-              {time[1]}
-              <small>分</small>
-            </span>
-            <i>:</i>
-            <span>
-              {time[2]}
-              <small>秒</small>
-            </span>
-            <span className="counter-dot" />
-            我们的故事，还在继续
-          </div>
-          <div className="hero-since">
-            <CalendarHeart size={14} />
-            故事开始于 {prettyDate(settings.startDate)}
-            <span>·</span>以{" "}
-            {settings.timezone === "Asia/Dubai" ? "迪拜" : "所选地区"}时间计日
-          </div>
-        </div>
-        <div className="hero-art">
-          <div className="orbit-line" />
-          <span className="handwriting">every day, with you.</span>
-          <HeroPhoto onClick={() => create("daily")} />
-          <span className="hero-spark">✧</span>
-          <div className="anniversary-sticker">
-            <CalendarHeart size={20} />
-            <div>
-              {next.days === 0 ? "就是今天！" : `还有 ${next.days} 天`}
-              <small>{next.years} 周年纪念日</small>
-            </div>
-          </div>
-        </div>
-      </section>
-      <div className="stat-row">
-        {[
-          {
-            icon: Camera,
-            value: media.filter((m) => m.type.startsWith("image/")).length,
-            label: "张照片",
-            note: "把瞬间变成永远",
-            to: "album",
-          },
-          {
-            icon: Play,
-            value: media.filter((m) => m.type.startsWith("video/")).length,
-            label: "段视频",
-            note: "留住声音和笑容",
-            to: "album",
-          },
-          {
-            icon: BookHeart,
-            value: memories.filter((m) => m.text).length,
-            label: "篇日记",
-            note: "那些说给你听的话",
-            to: "diary",
-          },
-          {
-            icon: PawPrint,
-            value: petAge?.days ?? "—",
-            label: "天的 mini",
-            note: petAge
-              ? `${petAge.years ? `${petAge.years} 岁 ` : ""}${petAge.months} 个月大的小可爱`
-              : "设置生日，陪它慢慢长大",
-            to: "mini",
-          },
-        ].map(({ icon: Icon, value, label, note, to }, i) => (
+    <Modal
+      title="选一张，作为我们的封面。"
+      onClose={() => {
+        if (!busy) onClose();
+      }}
+      wide
+    >
+      <p className="cover-help">
+        从相册中选择一张照片，它会出现在登录后的首页。
+      </p>
+      <div className="cover-options">
+        <button
+          disabled={busy}
+          className={!currentCover ? "selected" : ""}
+          aria-pressed={!currentCover}
+          onClick={() => select("")}
+        >
+          <img src={defaultCover} alt="默认海边封面" />
+          <span>海边的晚霞 {!currentCover && <Check size={15} />}</span>
+        </button>
+        {photos.map((photo) => (
           <button
-            key={label}
-            className={`stat stat-${i}`}
-            onClick={() => navigate(to as Page)}
+            disabled={busy}
+            key={photo.id}
+            className={currentCover === photo.id ? "selected" : ""}
+            aria-label={
+              "使用「" + photo.title + "」中的 " + photo.name + " 作为封面"
+            }
+            aria-pressed={currentCover === photo.id}
+            onClick={() => select(photo.id)}
           >
-            <div className="stat-icon">
-              <Icon size={21} strokeWidth={1.5} />
-            </div>
-            <div>
-              <div>
-                <strong>{value}</strong>
-                <span>{label}</span>
-              </div>
-              <small>{note}</small>
-            </div>
-            <ArrowUpRight size={15} />
+            <img src={photo.url} alt={photo.title} />
+            <span>
+              {photo.title}
+              {currentCover === photo.id && <Check size={15} />}
+            </span>
           </button>
         ))}
       </div>
-      <div className="dashboard-grid">
-        <section className="recent-section">
-          <div className="section-heading">
-            <div>
-              <h2>
-                最近的小美好 <span>OUR MEMORIES</span>
-              </h2>
-              <p>生活的可爱，藏在这些小事里。</p>
-            </div>
-            <button className="text-link" onClick={() => navigate("album")}>
-              所有回忆
-              <ArrowRight size={14} />
-            </button>
-          </div>
-          {latest.length ? (
-            <div className="memory-grid compact">
-              {latest.map((m) => (
-                <MemoryCard key={m.id} memory={m} onClick={() => open(m)} />
-              ))}
-            </div>
-          ) : (
-            <div className="first-memory">
-              <div className="first-memory-art">
-                <FlowerArt />
-                <span>the beginning of us.</span>
-              </div>
-              <div>
-                <span className="eyebrow">LET'S MAKE MEMORIES</span>
-                <h3>
-                  第一段回忆，
-                  <br />
-                  就从今天开始。
-                </h3>
-                <p>一张照片，或一句想对你说的话。</p>
-                <button className="text-link" onClick={() => create("daily")}>
-                  收藏第一个瞬间
-                  <ArrowUpRight size={15} />
-                </button>
-              </div>
-            </div>
-          )}
-        </section>
-        <aside className="mini-card">
-          <div className="mini-title">
-            <span>
-              <PawPrint size={15} />
-              我们的毛孩子
-            </span>
-            <button
-              onClick={() => navigate("mini")}
-              className="icon-button"
-              aria-label="查看 mini 的小世界"
-            >
-              <ArrowUpRight size={18} />
-            </button>
-          </div>
-          <CatArt />
-          <h3>
-            Hi, I'm <em>mini.</em>
-          </h3>
-          <p>一只认真陪你们长大的暹罗猫</p>
-          <div className="mini-card-bottom">
-            <span>
-              <span className="status-dot" />
-              {petAge
-                ? `${petAge.months} 个月${petAge.years ? ` · ${petAge.years} 岁` : ""}`
-                : "生日待记录"}
-            </span>
-            <button onClick={() => create("mini")}>
-              <Plus size={13} />
-              记录成长
-            </button>
-          </div>
-        </aside>
-      </div>
-      <section className="quick-note">
-        <div>
-          <span className="eyebrow">HOW WAS YOUR DAY?</span>
-          <h2>今天，想留下一点什么？</h2>
-        </div>
-        <div>
-          {(["sweet", "thought", "conflict"] as Category[]).map((c) => {
-            const Icon = icons[c];
-            return (
-              <button key={c} onClick={() => create(c)}>
-                <Icon size={18} />
-                {categoryLabels[c]}
-                <Plus size={13} />
-              </button>
-            );
-          })}
-        </div>
-      </section>
-    </>
+      {error && (
+        <p className="form-error" role="alert">
+          {error}
+        </p>
+      )}
+      <button
+        disabled={busy}
+        className="button secondary cover-upload"
+        onClick={onCreate}
+      >
+        <ImagePlus size={16} />
+        上传一张新照片
+      </button>
+    </Modal>
   );
 }
-function MemoryCard({
-  memory,
-  onClick,
-}: {
-  memory: Memory;
-  onClick: () => void;
-}) {
-  const media = memory.media[0];
-  const Icon = icons[memory.category];
-  return (
-    <motion.button
-      layout
-      whileTap={{ scale: 0.975 }}
-      transition={{ type: "spring", stiffness: 340, damping: 30 }}
-      className={`memory-card category-${memory.category}`}
-      onClick={onClick}
-    >
-      <div className="memory-cover">
-        {media ? (
-          media.type.startsWith("video/") ? (
-            <>
-              <video src={media.url} muted preload="metadata" playsInline />
-              <span className="play-overlay">
-                <Play size={21} />
-              </span>
-            </>
-          ) : (
-            <img src={media.url} alt={memory.title} loading="lazy" />
-          )
-        ) : (
-          <div className="text-cover">
-            <Icon size={30} strokeWidth={1} />
-            <p>{memory.text.slice(0, 90) || memory.title}</p>
-          </div>
-        )}
-        {memory.media.length > 1 && (
-          <span className="media-count">
-            <Images size={11} />
-            {memory.media.length}
-          </span>
-        )}
-      </div>
-      <div className="memory-caption">
-        <span className={`tag ${memory.category}`}>
-          {categoryLabels[memory.category]}
-          {memory.category === "conflict" && memory.resolved ? " · 已和好" : ""}
-        </span>
-        <h3>{memory.title}</h3>
-        <span className="memory-date">
-          {prettyDate(memory.date)}
-          <ArrowUpRight size={13} />
-        </span>
-      </div>
-    </motion.button>
-  );
-}
+
 function MemoryPage({
   page,
   data,
@@ -1092,11 +800,11 @@ function MemoryPage({
       {page === "mini" && (
         <section className="pet-hero">
           <div>
-            <span className="eyebrow">THE SMALLEST MEMBER OF OUR FAMILY</span>
+            <span className="section-caption">Our smallest family member</span>
             <h2>
-              mini 的快乐，
+              陪 mini，
               <br />
-              也要好好<em>收藏。</em>
+              再长大<em>一点。</em>
             </h2>
             <p>
               暹罗猫 · 生日 {prettyDate(data.settings.petBirthday) || "待填写"}
@@ -1118,7 +826,7 @@ function MemoryPage({
             </button>
           </div>
           <CatArt className="pet-large" />
-          <span className="pet-handwriting">
+          <span className="pet-handwriting" aria-hidden="true">
             little paws,
             <br />
             big love.
@@ -1129,6 +837,7 @@ function MemoryPage({
         <div className="filter-tabs" aria-label="按内容分类">
           <button
             className={filter === "all" ? "active" : ""}
+            aria-pressed={filter === "all"}
             onClick={() => setFilter("all")}
           >
             全部{page === "mini" ? "成长" : ""}
@@ -1139,6 +848,7 @@ function MemoryPage({
             ).map((c) => (
               <button
                 className={filter === c ? "active" : ""}
+                aria-pressed={filter === c}
                 key={c}
                 onClick={() => setFilter(c)}
               >
@@ -1171,7 +881,16 @@ function MemoryPage({
         </div>
       )}
       {memories.length ? (
-        <div className="memory-grid">
+        <div
+          className={
+            "memory-grid " +
+            (page === "diary"
+              ? "journal-grid"
+              : memories.length === 1
+                ? "single-memory"
+                : "")
+          }
+        >
           {memories.map((m) => (
             <MemoryCard memory={m} key={m.id} onClick={() => open(m)} />
           ))}
@@ -1194,7 +913,7 @@ function MemoryPage({
             page === "mini"
               ? "睡觉、撒娇、拆家。每一天都值得记录。"
               : page === "diary"
-                ? "写下开心的事，也给不开心的心情一个温柔的出口。"
+                ? "写写今天发生的事，也写写还没说出口的话。"
                 : undefined
           }
           action={page === "diary" ? "写第一篇日记" : "上传照片或视频"}
@@ -1246,7 +965,7 @@ function Composer({
       }
     }
     if (files.length + incoming.length + (entry?.media.length || 0) > 12) {
-      setError("每段回忆最多 12 个文件，可以分成多段收藏。");
+      setError("每段回忆最多 12 个文件，可以分成多段保存。");
       return;
     }
     setFiles([...files, ...incoming]);
@@ -1302,6 +1021,7 @@ function Composer({
             return (
               <button
                 className={selected === c ? "selected" : ""}
+                aria-pressed={selected === c}
                 key={c}
                 type="button"
                 onClick={() => setSelected(c)}
@@ -1325,7 +1045,7 @@ function Composer({
               }
               maxLength={100}
               required
-              autoFocus
+              data-initial-focus
             />
           </label>
           <label>
@@ -1448,7 +1168,7 @@ function Composer({
             ) : (
               <Heart size={16} />
             )}{" "}
-            {busy ? `正在收藏 ${progress}%` : "收藏这段回忆"}
+            {busy ? `正在保存 ${progress}%` : "保存这段回忆"}
           </Button>
         </div>
       </form>
@@ -1756,9 +1476,7 @@ function Care({
         </section>
       </div>
       <div className="section-heading">
-        <h2>
-          关心的痕迹 <span>LITTLE CHECK-INS</span>
-        </h2>
+        <h2>关心的痕迹</h2>
         <span className="micro">{data.trackers.length} 条记录</span>
       </div>
       {error && (
@@ -1973,6 +1691,7 @@ function SettingsPage({
     setBusy(true);
     const f = new FormData(e.currentTarget);
     const settings: Settings = {
+      ...data.settings,
       startDate: String(f.get("startDate")),
       names: String(f.get("names")).trim(),
       petBirthday: String(f.get("petBirthday")),
@@ -2144,7 +1863,7 @@ function SettingsPage({
           保存设置
         </Button>
       </form>
-      <aside>
+      <aside className="settings-aside">
         <div className="settings-card storage-card">
           <Cloud size={25} />
           <h2>{store.cloud ? "你们的云端空间" : "当前使用本机预览"}</h2>

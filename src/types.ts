@@ -29,6 +29,7 @@ export type Tracker = {
   created_at: string;
 };
 export type Settings = {
+  coverMediaId?: string;
   startDate: string;
   names: string;
   petBirthday: string;
