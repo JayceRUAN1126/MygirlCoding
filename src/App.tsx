@@ -989,6 +989,8 @@ function MemoryPage({
   );
 }
 
+const MAX_MEMORY_FILES = 12;
+
 function Composer({
   category,
   entry,
@@ -1010,12 +1012,21 @@ function Composer({
   const [error, setError] = useState("");
   const [drag, setDrag] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+  const uploadLabelId = useId();
+  const uploadHintId = useId();
+  const mediaCount = files.length + (entry?.media.length || 0);
+  const remainingFiles = MAX_MEMORY_FILES - mediaCount;
+  const photoCount = [...(entry?.media || []), ...files].filter((file) =>
+    file.type.startsWith("image/"),
+  ).length;
+  const videoCount = mediaCount - photoCount;
   useEffect(() => {
     const urls = files.map((f) => URL.createObjectURL(f));
     setPreviews(urls);
     return () => urls.forEach(URL.revokeObjectURL);
   }, [files]);
   function addFiles(incoming: File[]) {
+    if (busy || !incoming.length) return;
     setError("");
     for (const f of incoming) {
       if (!store.acceptedTypes.includes(f.type)) {
@@ -1029,11 +1040,13 @@ function Composer({
         return;
       }
     }
-    if (files.length + incoming.length + (entry?.media.length || 0) > 12) {
-      setError("每段回忆最多 12 个文件，可以分成多段保存。");
+    if (incoming.length > remainingFiles) {
+      setError(
+        `这次选择了 ${incoming.length} 个文件，还能添加 ${remainingFiles} 个。每段回忆最多 ${MAX_MEMORY_FILES} 个文件。`,
+      );
       return;
     }
-    setFiles([...files, ...incoming]);
+    setFiles((current) => [...current, ...incoming]);
   }
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -1151,71 +1164,129 @@ function Composer({
             <Heart size={15} />
           </label>
         )}
-        <input
-          ref={input}
-          className="visually-hidden"
-          type="file"
-          accept={store.acceptedTypes.join(",")}
-          multiple
-          aria-label="选择照片或视频"
-          onChange={(e) => {
-            addFiles(Array.from(e.target.files || []));
-            e.target.value = "";
-          }}
-        />
-        <button
-          type="button"
-          className={`upload-zone ${drag ? "drag" : ""}`}
-          onClick={() => input.current?.click()}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDrag(true);
-          }}
-          onDragLeave={() => setDrag(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDrag(false);
-            addFiles(Array.from(e.dataTransfer.files));
-          }}
-        >
-          <span className="upload-icon">
-            <ImagePlus size={23} />
-          </span>
-          <strong>添加照片 / 视频</strong>
-          <span>点击选择，也可以拖到这里</span>
-          <small>每个文件 ≤ 50 MB · 照片自动优化 · 最多 12 个</small>
-        </button>
-        {(files.length > 0 || !!entry?.media.length) && (
-          <div className="file-previews">
-            {entry?.media.map((f) => (
-              <div key={f.id}>
-                {f.type.startsWith("image/") ? (
-                  <img src={f.url} alt={f.name} />
-                ) : (
-                  <Play />
-                )}
-                <small>已收藏</small>
-              </div>
-            ))}
-            {files.map((f, i) => (
-              <div key={`${f.name}-${i}`}>
-                {f.type.startsWith("image/") ? (
-                  <img src={previews[i]} alt={f.name} />
-                ) : (
-                  <Play />
-                )}
-                <button
-                  type="button"
-                  aria-label={`移除 ${f.name}`}
-                  onClick={() => setFiles(files.filter((_, j) => j !== i))}
-                >
-                  <X size={12} />
-                </button>
-                <small>{(f.size / 1024 / 1024).toFixed(1)} MB</small>
-              </div>
-            ))}
+        <section className="media-selection" aria-labelledby={uploadLabelId}>
+          <div className="media-selection-heading">
+            <span id={uploadLabelId}>照片与视频</span>
+            <span className="media-selection-count" role="status">
+              {mediaCount} / {MAX_MEMORY_FILES}
+            </span>
           </div>
-        )}
+          <input
+            ref={input}
+            className="visually-hidden"
+            type="file"
+            accept={store.acceptedTypes.join(",")}
+            multiple
+            disabled={busy || remainingFiles === 0}
+            aria-label="批量选择照片或视频"
+            aria-describedby={uploadHintId}
+            onChange={(e) => {
+              addFiles(Array.from(e.target.files || []));
+              e.target.value = "";
+            }}
+          />
+          {mediaCount > 0 && (
+            <>
+              <div
+                className="file-previews"
+                role="list"
+                aria-label="已添加的照片与视频"
+              >
+                {entry?.media.map((f) => (
+                  <div key={f.id} role="listitem" aria-label={f.name}>
+                    {f.type.startsWith("image/") ? (
+                      <img src={f.url} alt={f.name} />
+                    ) : (
+                      <Play aria-label={f.name} />
+                    )}
+                    <small>已收藏</small>
+                  </div>
+                ))}
+                {files.map((f, i) => (
+                  <div
+                    key={`${f.name}-${i}`}
+                    role="listitem"
+                    aria-label={f.name}
+                  >
+                    {f.type.startsWith("image/") ? (
+                      <img src={previews[i]} alt={f.name} />
+                    ) : (
+                      <Play aria-label={f.name} />
+                    )}
+                    <button
+                      type="button"
+                      aria-label={`移除 ${f.name}`}
+                      disabled={busy}
+                      onClick={() => {
+                        setFiles((current) =>
+                          current.filter((_, j) => j !== i),
+                        );
+                        setError("");
+                      }}
+                    >
+                      <X size={14} />
+                    </button>
+                    <small>
+                      {f.size < 1024 * 1024
+                        ? `${Math.max(1, Math.round(f.size / 1024))} KB`
+                        : `${(f.size / 1024 / 1024).toFixed(1)} MB`}
+                    </small>
+                  </div>
+                ))}
+              </div>
+              <p className="media-selection-summary">
+                {[
+                  photoCount > 0 && `${photoCount} 张照片`,
+                  videoCount > 0 && `${videoCount} 段视频`,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+                <span>一起保存在这段回忆里</span>
+              </p>
+            </>
+          )}
+          <button
+            type="button"
+            className={`upload-zone ${mediaCount ? "has-files" : ""} ${drag ? "drag" : ""}`}
+            disabled={busy || remainingFiles === 0}
+            aria-describedby={uploadHintId}
+            onClick={() => input.current?.click()}
+            onDragOver={(e) => {
+              e.preventDefault();
+              if (!busy && remainingFiles > 0) setDrag(true);
+            }}
+            onDragLeave={() => setDrag(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDrag(false);
+              addFiles(Array.from(e.dataTransfer.files));
+            }}
+          >
+            <span className="upload-icon">
+              {mediaCount ? <Plus size={21} /> : <Images size={23} />}
+            </span>
+            <strong>
+              {remainingFiles === 0
+                ? "这段回忆已经装满啦"
+                : mediaCount
+                  ? "继续添加照片 / 视频"
+                  : "一次选择多张照片 / 视频"}
+            </strong>
+            <span>
+              {remainingFiles === 0
+                ? "可以先保存，再开启一段新回忆"
+                : mediaCount
+                  ? `还可以添加 ${remainingFiles} 个，也可以一起拖到这里`
+                  : "点击批量选择，也可以把文件一起拖到这里"}
+            </span>
+          </button>
+          <div className="upload-hint" id={uploadHintId}>
+            <p>电脑按住 ⌘ / Ctrl 可多选；手机在相册中勾选多张。</p>
+            <p>
+              每个文件 ≤ 50 MB · 每段最多 {MAX_MEMORY_FILES} 个 · 照片自动优化
+            </p>
+          </div>
+        </section>
         {error && (
           <p role="alert" className="form-error">
             {error}

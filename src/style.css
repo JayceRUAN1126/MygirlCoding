@@ -1493,6 +1493,44 @@ label {
 .form-row > .grow {
   flex: 2;
 }
+.media-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.media-selection-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.media-selection-count {
+  padding: 5px 10px;
+  border-radius: 20px;
+  background: #edf3f5;
+  color: #506d7c;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.media-selection-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  color: #405e6e;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.media-selection-summary span {
+  color: #778b96;
+}
+.upload-hint {
+  color: #778b96;
+  font-size: 11px;
+  line-height: 1.9;
+}
 .upload-zone {
   display: flex;
   flex-direction: column;
@@ -1508,9 +1546,22 @@ label {
     border-color 0.2s;
 }
 .upload-zone.drag,
-.upload-zone:hover {
+.upload-zone:hover:not(:disabled) {
   background: #e5f0f5;
   border-color: #6e94a9;
+}
+.upload-zone.has-files {
+  padding: 18px 12px;
+  gap: 5px;
+}
+.upload-zone.has-files .upload-icon {
+  width: 32px;
+  height: 32px;
+  margin-bottom: 2px;
+}
+.upload-zone:disabled {
+  cursor: default;
+  opacity: 0.65;
 }
 .upload-icon {
   height: 45px;
@@ -1552,13 +1603,13 @@ label {
   height: 17px;
 }
 .file-previews {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
   gap: 12px;
 }
 .file-previews > div {
-  width: 95px;
-  height: 95px;
+  min-width: 0;
+  aspect-ratio: 1;
   position: relative;
   border-radius: 10px;
   background: #e4edf2;
@@ -1576,10 +1627,14 @@ label {
   top: 3px;
   right: 3px;
   border-radius: 50%;
-  padding: 6px;
+  width: 36px;
+  height: 36px;
   background: #ffffffe6;
   display: grid;
   place-items: center;
+}
+.file-previews button:disabled {
+  opacity: 0.5;
 }
 .file-previews small {
   position: absolute;

@@ -5,7 +5,7 @@ A private, responsive memory space for two people and their cat. Built with Reac
 ## What works
 
 - Live relationship dashboard, calendar anniversary countdown and pet age calculation.
-- Photo/video upload; images are resized to at most 2048px and encoded to WebP before upload.
+- Batch photo/video upload with thumbnails, a selected-file count, additional selections and removal before saving; each memory supports up to 12 files. Images are resized to at most 2048px and encoded to WebP before upload.
 - Albums, text and photo journals, sweet moments, thoughts, conflict/repair records, and pet records.
 - Fullscreen-style media dialog with thumbnails, keyboard navigation, touch swipes, zoom and native video controls.
 - Personal cycle records with explicitly defined interval windows; work records with per-day expected times and next-day support.
