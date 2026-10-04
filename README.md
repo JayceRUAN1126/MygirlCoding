@@ -1,6 +1,6 @@
 # 照耀在大地上 · Light upon the Earth
 
-A private, responsive memory space for two people and their cat. Built with React, TypeScript, Vite, Motion and Supabase. The interface uses a cinematic photographic cover, quiet blue-gray surfaces, expressive typography, a floating navigation bar, a mobile navigation dock, and direct feedback on every save.
+A private, responsive memory space for two people and their cat. Built with React, TypeScript, Vite, Motion and Supabase. The interface pairs violet, peach and apricot gradients with an editorial memory desk, translucent navigation, expressive typography and clear feedback for everyday actions.
 
 ## What works
 
@@ -10,17 +10,21 @@ A private, responsive memory space for two people and their cat. Built with Reac
 - Fullscreen-style media dialog with thumbnails, keyboard navigation, touch swipes, zoom and native video controls.
 - Personal cycle records with explicitly defined interval windows; work records with per-day expected times and next-day support.
 - Editing, deletion with confirmation, search/filtering, and full JSON export including media.
+- Search and category/media filters show matching and total memory counts. An empty filtered result explains the active conditions and offers a single action to clear them.
+- A searchable quick-action menu opens from the navigation bar or **Cmd/Ctrl + K**. It supports keyboard navigation and shortcuts to create records or visit a section; the global shortcut stays out of text fields and other open dialogs.
+- Closing an edited memory asks whether to continue editing or discard unsaved changes, preserving the form and selected files while the confirmation is open. Saving blocks closing and duplicate submission. This is an exit safeguard, **not autosave**; drafts are not persisted across reloads.
 - Supabase email/password login, shared household, private storage, row-level security and realtime refresh.
 - Desktop, tablet and phone layouts; respects reduced-motion preference.
-- Personal homepage covers selected from private album photos; the decorative sea cover is used until a photo is selected. Selecting a cover saves only its media ID in the household settings.
-- Switchable sea, dawn and night atmospheres with pointer-following light, tap ripples, scroll parallax and a gently tilting photo stack. Background and motion preferences are saved in the private household settings; the public login page stores only its own appearance preference in the browser.
+- Personal homepage covers selected from private album photos. Selecting a cover saves only its media ID in the household settings and switches to the sea atmosphere, where the decorative sea photograph is the fallback.
+- Switchable **海盐 / 朝霞 / 星梦** atmospheres with layered gradients, pointer-following light, tap ripples and a gently tilting photo stack. Dawn is the default when no appearance preference has been saved; existing preferences are preserved. Background and motion preferences are saved in the private household settings; the public login page stores only its own appearance preference in the browser.
+- Ambient movement uses slow CSS transforms and opacity transitions without canvas, WebGL or animated filters. It can be paused, stops when the scene is offscreen or the page is hidden, and follows the system's reduced-motion preference. Touch scrolling remains native.
 - A layered dashboard with stacked photos, a journal note and overlapping relationship, anniversary and pet panels. The photo stack opens real memories and can browse between photo entries when several exist.
 
 ## Visual direction
 
-The redesign draws on image-led composition observed on [Awwwards](https://www.awwwards.com/) and [Tengile MalaMala](https://tengilemalamala.com/), visual browsing from [Designspiration](https://www.designspiration.com/), and the planning and critique methods in Anthropic's [frontend-design](https://github.com/anthropics/skills/tree/main/skills/frontend-design) guidance. The implementation is original; reference-site code and imagery were not copied.
+The visual direction draws on [Stripe](https://stripe.com/ae) for purposeful gradients and clear primary actions, [Linear](https://linear.app) for consistent hierarchy and navigation, and [Framer](https://www.framer.com) for expressive motion that respects reduced-motion preferences. Their official pages were checked on 2026-10-04. These are design references, not templates: this interface keeps its own warm palette and personal-memory layout; reference-site code and imagery were not copied.
 
-The default sea photograph is by Sebastien Gabriel under the Unsplash License; see `public/images/README.md`. It is decorative and does not represent a personal memory. Dawn and night backgrounds are original CSS compositions, with no additional images or rendering dependencies. Uploaded photos remain in private storage. `src/Story.tsx` contains the dashboard and album components; `src/Atmosphere.tsx` and `src/depth.css` define the interactive scenery and layered layout; `src/App.tsx` owns authentication and the data-editing flows. Background motion can be paused and respects the system's reduced-motion preference. Touch scrolling remains native.
+The sea photograph is by Sebastien Gabriel under the Unsplash License; see `public/images/README.md`. It is decorative and does not represent a personal memory. Dawn and night backgrounds are original CSS compositions with no additional images or rendering dependencies. Uploaded photos remain in private storage. `src/Story.tsx` contains the dashboard and memory cards; `src/Atmosphere.tsx` and `src/ambient-premium.css` define the interactive scenery; `src/depth.css` and `src/refinement.css` define the layered layout and visual system. `src/QuickActions.tsx` owns the quick-action menu, and `src/App.tsx` owns authentication and data-editing flows.
 
 ## Development
 
@@ -42,7 +46,7 @@ VITE_PREVIEW_START_DATE=YYYY-MM-DD
 VITE_PREVIEW_PET_BIRTHDAY=YYYY-MM-DD
 ```
 
-Personal dates, login emails, credentials, uploaded media and user records do not belong in Git. `.env*`, research material and local artifacts are ignored. 3D character assets being developed separately are not required by this application.
+Personal dates, login emails, credentials, uploaded media and user records do not belong in Git. `.env*`, research material and local artifacts are ignored.
 
 ## Supabase setup
 
@@ -71,6 +75,6 @@ Daily video uploads can exceed 1 GB quickly. Images are optimized automatically;
 
 ## Validation and limits
 
-`pnpm test` checks calendar-day counting, anniversary boundaries, pet age, time zones, cycle intervals and punctuality metrics. The UI must additionally be checked for uploads, reload persistence, media viewing, authentication, responsive layout and realtime changes. Sample records used during development are not real personal memories.
+`pnpm test` checks calendar-day counting, anniversary boundaries, pet age, time zones, cycle intervals and punctuality metrics. The UI must additionally be checked for uploads, reload persistence, media viewing, authentication, responsive layout and realtime changes. Interaction checks should include quick-action keyboard use, draft exit/continue/discard, filtered empty states, atmosphere switching, pausing and reduced-motion behavior. Sample records used during development are not real personal memories.
 
-Cycle statistics are personal tracking only, not diagnosis or contraception advice. Work punctuality includes only dates the user actually records. JSON export contains media and may require substantial memory for large video collections; there is no in-app restore UI yet. Media transcodes, push notifications, native offline sync, live 3D avatars and automatic backups are future additions.
+Cycle statistics are personal tracking only, not diagnosis or contraception advice. Work punctuality includes only dates the user actually records. JSON export contains media and may require substantial memory for large video collections; there is no in-app restore UI yet. Media transcodes, push notifications, native offline sync and automatic backups are future additions.

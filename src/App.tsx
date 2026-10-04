@@ -41,6 +41,7 @@ import { CatArt } from "./Art";
 import { Brand, Dashboard, MemoryCard, SeaScene, defaultCover } from "./Story";
 import type { Page } from "./Story";
 import { SceneControls } from "./Atmosphere";
+import { QuickActions } from "./QuickActions";
 import type { Appearance } from "./Atmosphere";
 import type { Category, Memory, Settings, Snapshot } from "./types";
 import { categoryLabels, defaults } from "./types";
@@ -97,9 +98,10 @@ function Button({
   type?: "button" | "submit";
   disabled?: boolean;
 }) {
+  const reduce = useReducedMotion();
   return (
     <motion.button
-      whileTap={{ scale: 0.97 }}
+      whileTap={reduce ? undefined : { scale: 0.97 }}
       type={type}
       className={`button ${secondary ? "secondary" : ""}`}
       onClick={onClick}
@@ -121,6 +123,8 @@ function Modal({
   wide?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const backdropPressed = useRef(false);
+  const reduce = useReducedMotion();
   const titleId = useId();
   useEffect(() => {
     const dialog = ref.current;
@@ -145,13 +149,28 @@ function Modal({
         e.preventDefault();
         onClose();
       }}
+      onPointerDown={(e) => {
+        const box = e.currentTarget.getBoundingClientRect();
+        backdropPressed.current =
+          e.clientX < box.left ||
+          e.clientX > box.right ||
+          e.clientY < box.top ||
+          e.clientY > box.bottom;
+      }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        const box = e.currentTarget.getBoundingClientRect();
+        const outside =
+          e.clientX < box.left ||
+          e.clientX > box.right ||
+          e.clientY < box.top ||
+          e.clientY > box.bottom;
+        if (backdropPressed.current && outside) onClose();
+        backdropPressed.current = false;
       }}
     >
       <motion.div
         className="modal-inner"
-        initial={{ opacity: 0, y: 18 }}
+        initial={reduce ? false : { opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 340, damping: 30 }}
       >
@@ -173,12 +192,14 @@ function Empty({
   title = "第一张照片，就从今天开始。",
   text = "不用等一个特别的日子，今天就可以留一张。",
   action,
+  actionIcon: ActionIcon = Plus,
   onClick,
 }: {
   icon?: LucideIcon;
   title?: string;
   text?: string;
   action?: string;
+  actionIcon?: LucideIcon;
   onClick?: () => void;
 }) {
   return (
@@ -190,7 +211,7 @@ function Empty({
       <p>{text}</p>
       {action && (
         <Button secondary onClick={onClick}>
-          <Plus size={15} />
+          <ActionIcon size={15} />
           {action}
         </Button>
       )}
@@ -211,7 +232,7 @@ function Login({ notConfigured = false }: { notConfigured?: boolean }) {
     } catch {
       /* The login page also works when browser storage is unavailable. */
     }
-    return { atmosphere: "coast", ambientMotion: true };
+    return { atmosphere: "dawn", ambientMotion: true };
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -388,6 +409,7 @@ function Home() {
   const [error, setError] = useState("");
   const [toast, setToast] = useState("");
   const [coverPicker, setCoverPicker] = useState(false);
+  const [quickOpen, setQuickOpen] = useState(false);
   const [appearanceDraft, setAppearanceDraft] = useState<Appearance | null>(
     null,
   );
@@ -400,6 +422,30 @@ function Home() {
   const [tracker, setTracker] = useState<"period" | "work" | null>(null);
   const [now, setNow] = useState(new Date());
   const reduce = useReducedMotion();
+  useEffect(() => {
+    const openQuickActions = (event: KeyboardEvent) => {
+      if (
+        event.defaultPrevented ||
+        event.isComposing ||
+        event.altKey ||
+        !(event.metaKey || event.ctrlKey) ||
+        event.key.toLowerCase() !== "k" ||
+        event.repeat
+      )
+        return;
+      const target = event.target;
+      if (document.querySelector("dialog[open]")) return;
+      if (
+        target instanceof HTMLElement &&
+        (target.isContentEditable || target.closest("input, textarea, select"))
+      )
+        return;
+      event.preventDefault();
+      setQuickOpen(true);
+    };
+    window.addEventListener("keydown", openQuickActions);
+    return () => window.removeEventListener("keydown", openQuickActions);
+  }, []);
   const refresh = useCallback(async () => {
     const version = ++loadingVersion.current;
     try {
@@ -438,7 +484,7 @@ function Home() {
   }, [toast]);
   const today = civilDay(snapshot.settings.timezone, now);
   const appearance: Appearance = appearanceDraft || {
-    atmosphere: snapshot.settings.atmosphere || "coast",
+    atmosphere: snapshot.settings.atmosphere || "dawn",
     ambientMotion: snapshot.settings.ambientMotion !== false,
   };
   async function changeAppearance(patch: Partial<Appearance>) {
@@ -517,6 +563,17 @@ function Home() {
           ))}
         </nav>
         <div className="header-actions">
+          <button
+            className="quick-trigger"
+            aria-label="快捷入口"
+            aria-haspopup="dialog"
+            aria-keyshortcuts="Meta+K Control+K"
+            onClick={() => setQuickOpen(true)}
+          >
+            <Search size={16} strokeWidth={1.7} />
+            <span>快捷入口</span>
+            <kbd>⌘ K</kbd>
+          </button>
           <span className="private-badge">
             <LockKeyhole size={12} />
             只有我们
@@ -544,6 +601,10 @@ function Home() {
           {page !== "dashboard" && (
             <div className="page-heading">
               <div>
+                <p className="page-eyebrow">
+                  {pages.find((item) => item.id === page)?.en ||
+                    "MAKE YOURSELF AT HOME"}
+                </p>
                 <h1>
                   {page === "album"
                     ? "镜头里的我们。"
@@ -655,8 +716,7 @@ function Home() {
           )}
           <footer className="site-footer">
             <span>
-              照耀在大地上 <span className="footer-dash" />{" "}
-              今天、明天，和你。
+              照耀在大地上 <span className="footer-dash" /> 今天、明天，和你。
             </span>
             <span>
               你、我，还有 mini <Heart size={11} />
@@ -664,6 +724,12 @@ function Home() {
           </footer>
         </main>
       </div>
+      <QuickActions
+        open={quickOpen}
+        onClose={() => setQuickOpen(false)}
+        navigate={navigate}
+        create={newMemory}
+      />
       {coverPicker && (
         <CoverPicker
           data={snapshot}
@@ -838,20 +904,37 @@ function MemoryPage({
   open: (m: Memory) => void;
   navigate: (p: Page) => void;
 }) {
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState<Category | "all">("all");
   const [query, setQuery] = useState("");
   const [mediaFilter, setMediaFilter] = useState("all");
   const pet = age(data.settings.petBirthday, today);
-  const memories = data.memories
+  const normalizedQuery = query.trim().toLowerCase();
+  const hasFilters =
+    !!normalizedQuery || filter !== "all" || mediaFilter !== "all";
+  const collection = data.memories.filter((m) =>
+    page === "mini"
+      ? m.category === "mini"
+      : page === "album"
+        ? m.media.length > 0
+        : !!m.text,
+  );
+  const activeFilters = [
+    normalizedQuery && `“${query.trim()}”`,
+    filter !== "all" && categoryLabels[filter],
+    mediaFilter !== "all" && (mediaFilter === "image/" ? "照片" : "视频"),
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  function clearFilters() {
+    setFilter("all");
+    setQuery("");
+    setMediaFilter("all");
+  }
+  const memories = collection
     .filter(
       (m) =>
-        (page === "mini"
-          ? m.category === "mini"
-          : page === "album"
-            ? m.media.length > 0
-            : !!m.text) &&
         (filter === "all" || m.category === filter) &&
-        `${m.title} ${m.text}`.toLowerCase().includes(query.toLowerCase()) &&
+        `${m.title} ${m.text}`.toLowerCase().includes(normalizedQuery) &&
         (mediaFilter === "all" ||
           m.media.some((f) => f.type.startsWith(mediaFilter))),
     )
@@ -931,9 +1014,19 @@ function MemoryPage({
           />
         </label>
       </div>
-      {page === "album" && (
-        <div className="album-meta">
-          <span>{memories.length} 段回忆</span>
+      <div className="album-meta memory-results">
+        <span role="status" aria-live="polite">
+          {hasFilters
+            ? `找到 ${memories.length} 段 · 共 ${collection.length} 段回忆`
+            : `${collection.length} 段回忆`}
+        </span>
+        {hasFilters && memories.length > 0 && (
+          <button className="text-link" onClick={clearFilters}>
+            <X size={14} />
+            清除筛选
+          </button>
+        )}
+        {page === "album" && (
           <select
             aria-label="媒体类型"
             value={mediaFilter}
@@ -943,8 +1036,8 @@ function MemoryPage({
             <option value="image/">只看照片</option>
             <option value="video/">只看视频</option>
           </select>
-        </div>
-      )}
+        )}
+      </div>
       {memories.length ? (
         <div
           className={
@@ -963,10 +1056,16 @@ function MemoryPage({
       ) : (
         <Empty
           icon={
-            page === "mini" ? PawPrint : page === "diary" ? BookHeart : Camera
+            hasFilters
+              ? Search
+              : page === "mini"
+                ? PawPrint
+                : page === "diary"
+                  ? BookHeart
+                  : Camera
           }
           title={
-            query || filter !== "all"
+            hasFilters
               ? "还没有找到这段回忆"
               : page === "mini"
                 ? "收藏 mini 的第一个小脚印"
@@ -975,14 +1074,27 @@ function MemoryPage({
                   : undefined
           }
           text={
-            page === "mini"
-              ? "睡觉、撒娇、拆家。每一天都值得记录。"
-              : page === "diary"
-                ? "写写今天发生的事，也写写还没说出口的话。"
-                : undefined
+            hasFilters
+              ? `没有符合 ${activeFilters} 的记录，试试其他关键词，或清除筛选看看全部回忆。`
+              : page === "mini"
+                ? "睡觉、撒娇、拆家。每一天都值得记录。"
+                : page === "diary"
+                  ? "写写今天发生的事，也写写还没说出口的话。"
+                  : undefined
           }
-          action={page === "diary" ? "写第一篇日记" : "上传照片或视频"}
-          onClick={() => create(page === "mini" ? "mini" : "daily")}
+          action={
+            hasFilters
+              ? "清除筛选"
+              : page === "diary"
+                ? "写第一篇日记"
+                : "上传照片或视频"
+          }
+          actionIcon={hasFilters ? X : Plus}
+          onClick={
+            hasFilters
+              ? clearFilters
+              : () => create(page === "mini" ? "mini" : "daily")
+          }
         />
       )}
     </>
@@ -1011,9 +1123,22 @@ function Composer({
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
   const [drag, setDrag] = useState(false);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const continueRef = useRef<HTMLButtonElement>(null);
+  const editingFocus = useRef<HTMLElement | null>(null);
+  const initialValues = useRef({
+    title: entry?.title || "",
+    text: entry?.text || "",
+    date: entry?.date || today,
+    category: entry?.category || category,
+    resolved: !!entry?.resolved,
+  });
   const input = useRef<HTMLInputElement>(null);
   const uploadLabelId = useId();
   const uploadHintId = useId();
+  const discardTitleId = useId();
+  const discardDescriptionId = useId();
   const mediaCount = files.length + (entry?.media.length || 0);
   const remainingFiles = MAX_MEMORY_FILES - mediaCount;
   const photoCount = [...(entry?.media || []), ...files].filter((file) =>
@@ -1025,6 +1150,29 @@ function Composer({
     setPreviews(urls);
     return () => urls.forEach(URL.revokeObjectURL);
   }, [files]);
+  useEffect(() => {
+    if (confirmDiscard) continueRef.current?.focus();
+    else if (editingFocus.current?.isConnected) editingFocus.current.focus();
+  }, [confirmDiscard]);
+  function requestClose() {
+    if (busy || confirmDiscard) return;
+    const form = formRef.current;
+    const values = form ? new FormData(form) : null;
+    const initial = initialValues.current;
+    const dirty =
+      files.length > 0 ||
+      selected !== initial.category ||
+      (values &&
+        (String(values.get("title") || "") !== initial.title ||
+          String(values.get("text") || "") !== initial.text ||
+          String(values.get("date") || "") !== initial.date ||
+          (values.get("resolved") === "on") !== initial.resolved));
+    if (!dirty) {
+      onClose();
+      return;
+    }
+    setConfirmDiscard(true);
+  }
   function addFiles(incoming: File[]) {
     if (busy || !incoming.length) return;
     setError("");
@@ -1050,6 +1198,7 @@ function Composer({
   }
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (busy || confirmDiscard) return;
     const f = new FormData(e.currentTarget);
     if (
       !String(f.get("text")).trim() &&
@@ -1087,12 +1236,48 @@ function Composer({
   return (
     <Modal
       title={entry ? "编辑这段回忆" : "把这一刻，留在这里。"}
-      onClose={() => {
-        if (!busy) onClose();
-      }}
+      onClose={requestClose}
       wide
     >
-      <form onSubmit={submit} className="editor-form">
+      {confirmDiscard && (
+        <section
+          className="draft-confirmation"
+          aria-labelledby={discardTitleId}
+        >
+          <span className="draft-confirmation-icon" aria-hidden="true">
+            <BookHeart size={28} />
+          </span>
+          <h3 id={discardTitleId}>这段回忆，还没有存好。</h3>
+          <p id={discardDescriptionId}>
+            刚写下的文字和新添加的照片还在这里。现在离开，会丢失本次未保存的修改。
+          </p>
+          <div className="draft-confirmation-actions">
+            <button
+              ref={continueRef}
+              type="button"
+              className="button"
+              aria-describedby={`${discardTitleId} ${discardDescriptionId}`}
+              onClick={() => setConfirmDiscard(false)}
+            >
+              继续编辑
+              <ArrowRight size={16} />
+            </button>
+            <button type="button" className="text-link" onClick={onClose}>
+              放弃修改
+            </button>
+          </div>
+        </section>
+      )}
+      <form
+        ref={formRef}
+        onSubmit={submit}
+        onFocusCapture={(event) => {
+          editingFocus.current = event.target;
+        }}
+        aria-busy={busy}
+        className="editor-form"
+        style={confirmDiscard ? { display: "none" } : undefined}
+      >
         <div className="category-picker">
           {(Object.keys(categoryLabels) as Category[]).map((c) => {
             const Icon = icons[c];
@@ -1102,6 +1287,7 @@ function Composer({
                 aria-pressed={selected === c}
                 key={c}
                 type="button"
+                disabled={busy}
                 onClick={() => setSelected(c)}
               >
                 <Icon size={15} />
@@ -1115,6 +1301,7 @@ function Composer({
             给回忆起个名字
             <input
               name="title"
+              readOnly={busy}
               defaultValue={entry?.title}
               placeholder={
                 selected === "mini"
@@ -1130,6 +1317,7 @@ function Composer({
             发生在
             <input
               name="date"
+              readOnly={busy}
               type="date"
               defaultValue={entry?.date || today}
               max={today}
@@ -1143,6 +1331,7 @@ function Composer({
             : "想写下的话"}
           <textarea
             name="text"
+            readOnly={busy}
             defaultValue={entry?.text}
             rows={5}
             maxLength={20000}
@@ -1158,6 +1347,7 @@ function Composer({
             <input
               type="checkbox"
               name="resolved"
+              disabled={busy}
               defaultChecked={entry?.resolved}
             />
             <span>我们已经聊开，和好啦</span>

@@ -1,0 +1,501 @@
+/* Scene-local color and light. No canvas, WebGL, or animated filters. */
+.premium-scene,
+.premium-scene-controls {
+  --scene-ink: #f1fcfa;
+  --scene-muted: #d1e7ea;
+  --scene-accent: #a9eadb;
+  --scene-border: #bce9e840;
+  --scene-panel: #d6f2f51a;
+  --scene-control-active: #dff7f82c;
+  --scene-shadow: #16485924;
+}
+.premium-scene[data-atmosphere="dawn"],
+.premium-scene-controls[data-atmosphere="dawn"] {
+  --scene-ink: #49315e;
+  --scene-muted: #70576f;
+  --scene-accent: #935c97;
+  --scene-border: #88669b26;
+  --scene-panel: #fff0f345;
+  --scene-control-active: #fff7efb3;
+  --scene-shadow: #9477a51c;
+}
+.premium-scene[data-atmosphere="night"],
+.premium-scene-controls[data-atmosphere="night"] {
+  --scene-ink: #f5edff;
+  --scene-muted: #d8ccef;
+  --scene-accent: #d7c3ff;
+  --scene-border: #e5d4fb3b;
+  --scene-panel: #d1bdf51c;
+  --scene-control-active: #e1d1ff29;
+  --scene-shadow: #38267330;
+}
+.premium-scene.ambient-scene {
+  position: relative;
+  isolation: isolate;
+  /* Keep focus/scrollIntoView from scrolling the decorative scene internally. */
+  overflow: clip;
+  background: #447a91;
+  color: var(--scene-ink);
+  transition: color 0.5s;
+}
+.premium-scene[data-atmosphere="dawn"] {
+  background: #ecd5e9;
+}
+.premium-scene[data-atmosphere="night"] {
+  background: #635094;
+}
+.premium-scene .ambient-visual {
+  z-index: -4;
+}
+.premium-scene .ambient-parallax {
+  inset: -28px;
+  background: none;
+}
+.premium-scene .ambient-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.8;
+  filter: saturate(1.04);
+  object-position: 50% 54%;
+}
+.premium-scene .ambient-mesh,
+.premium-scene .ambient-silk,
+.premium-scene .ambient-aureole,
+.premium-scene .ambient-dust {
+  position: absolute;
+  pointer-events: none;
+}
+.premium-scene .ambient-mesh {
+  inset: 0;
+}
+.premium-scene .atmosphere-coast {
+  background: #4b829d;
+}
+.premium-scene .atmosphere-coast .ambient-mesh {
+  opacity: 0.54;
+  background:
+    radial-gradient(ellipse at 87% 0%, #d1f0e4 0%, transparent 49%),
+    radial-gradient(ellipse at 90% 83%, #3b9bba 0%, transparent 47%),
+    radial-gradient(ellipse at 22% 80%, #4d659f 0%, transparent 65%),
+    linear-gradient(125deg, #37647f, #65b3b5 64%, #b4e1dc);
+}
+.premium-scene .atmosphere-dawn {
+  background: #dfc9e4;
+}
+.premium-scene .atmosphere-dawn .ambient-mesh {
+  background:
+    radial-gradient(
+      ellipse at 85% 9%,
+      #ffdaa8 0%,
+      #ffd4b768 31%,
+      transparent 52%
+    ),
+    radial-gradient(
+      ellipse at 86% 89%,
+      #b8a9ea 0%,
+      #bfade8c4 20%,
+      transparent 57%
+    ),
+    radial-gradient(
+      ellipse at 8% 56%,
+      #f0dcec 0%,
+      #e9d5edb0 33%,
+      transparent 64%
+    ),
+    linear-gradient(118deg, #e5d8f0 0%, #ebcce0 47%, #f6c9c7 80%, #ddc1e4);
+}
+.premium-scene .atmosphere-night {
+  background: #615091;
+}
+.premium-scene .atmosphere-night .ambient-mesh {
+  background:
+    radial-gradient(
+      ellipse at 95% 15%,
+      #b5a5ec 0%,
+      #9d81d37a 29%,
+      transparent 52%
+    ),
+    radial-gradient(
+      ellipse at 63% 92%,
+      #7987db 0%,
+      #6f70bc88 32%,
+      transparent 56%
+    ),
+    radial-gradient(ellipse at 3% 70%, #57427e 0%, transparent 67%),
+    linear-gradient(128deg, #604581, #7d61a4 49%, #9b85c5);
+}
+.premium-scene .ambient-silk {
+  width: 91%;
+  height: 75%;
+  left: 39%;
+  top: -21%;
+  border-radius: 45% 42% 51% 49% / 56% 60% 43% 42%;
+  transform: rotate(-31deg);
+  background: linear-gradient(
+    160deg,
+    #eaf7ed06 17%,
+    #c9fff51c 46%,
+    #dcfff590 62%,
+    #84c8d946 78%,
+    transparent 91%
+  );
+  box-shadow:
+    inset 0 -1px 1px #ebffff42,
+    0 12px 45px #8ddbdd16;
+  animation: premium-silk-flow 24s ease-in-out infinite alternate;
+}
+.premium-scene .silk-two {
+  top: 59%;
+  left: 21%;
+  width: 110%;
+  height: 75%;
+  opacity: 0.65;
+  transform: rotate(-29deg);
+  background: linear-gradient(
+    165deg,
+    transparent 8%,
+    #84aac208 30%,
+    #b3ded53b 58%,
+    #bcedd961 75%,
+    transparent 95%
+  );
+  box-shadow:
+    inset 0 1px 1px #f0fffc38,
+    0 -20px 65px #b8f2dd14;
+  animation-name: premium-silk-return;
+  animation-duration: 29s;
+  animation-delay: -12s;
+}
+.premium-scene .atmosphere-dawn .silk-one {
+  background: linear-gradient(
+    164deg,
+    #fdf0d208 15%,
+    #fceace18 43%,
+    #fff1d7ae 63%,
+    #f1bda974 79%,
+    #daacd91c 94%
+  );
+  box-shadow:
+    inset 0 -1px 1px #fff9dc94,
+    0 16px 50px #d99ea226;
+}
+.premium-scene .atmosphere-dawn .silk-two {
+  background: linear-gradient(
+    164deg,
+    transparent 7%,
+    #e0d2f132 29%,
+    #c7b6ee87 56%,
+    #eed9f1b8 78%,
+    #e9c3d840
+  );
+  box-shadow:
+    inset 0 1px 1px #fff1fead,
+    0 -18px 55px #f7e5f440;
+}
+.premium-scene .atmosphere-night .silk-one {
+  background: linear-gradient(
+    158deg,
+    #e2caff05 13%,
+    #d7b8ff1a 42%,
+    #e8b5ed88 61%,
+    #aa92dd80 78%,
+    #867adb0a 94%
+  );
+  box-shadow:
+    inset 0 -1px 1px #ffe0f46b,
+    0 18px 70px #a890f22e;
+}
+.premium-scene .atmosphere-night .silk-two {
+  background: linear-gradient(
+    165deg,
+    transparent 7%,
+    #a1a5ed16 28%,
+    #a5b1ed70 54%,
+    #d2c4f290 79%,
+    #9181d830
+  );
+  box-shadow:
+    inset 0 1px 1px #e3d8ff78,
+    0 -18px 65px #b8a5ee30;
+}
+.premium-scene .ambient-aureole {
+  width: 42%;
+  aspect-ratio: 1;
+  top: 5%;
+  right: 2%;
+  opacity: 0.5;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at center,
+    #eefce045,
+    #ddf8ed15 45%,
+    transparent 70%
+  );
+  animation: premium-light-drift 21s ease-in-out infinite alternate;
+}
+.premium-scene .atmosphere-dawn .ambient-aureole {
+  background: radial-gradient(
+    ellipse at center,
+    #fff0c388,
+    #ffebd028 44%,
+    transparent 70%
+  );
+}
+.premium-scene .atmosphere-night .ambient-aureole {
+  background: radial-gradient(
+    ellipse at center,
+    #ebd0ff64,
+    #d4c8ff25 42%,
+    transparent 69%
+  );
+}
+.premium-scene .ambient-dust {
+  inset: 0;
+  opacity: 0.4;
+  background:
+    radial-gradient(circle at 76% 19%, #fff8df 0 1px, transparent 1.8px),
+    radial-gradient(circle at 90% 40%, #f4edff 0 1px, transparent 1.8px),
+    radial-gradient(circle at 61% 80%, #e0edff 0 1px, transparent 1.7px),
+    radial-gradient(circle at 88% 77%, #f9e9ff 0 1px, transparent 1.8px);
+}
+.premium-scene .atmosphere-coast .ambient-dust {
+  display: none;
+}
+.premium-scene[data-custom-cover="true"] .atmosphere-coast .ambient-mesh {
+  opacity: 0.2;
+}
+.premium-scene[data-custom-cover="true"] .atmosphere-coast .ambient-silk {
+  opacity: 0.2;
+}
+.premium-scene[data-custom-cover="true"] .ambient-photo {
+  opacity: 1;
+}
+.premium-scene > .ambient-shade {
+  background: linear-gradient(
+    100deg,
+    #204a65d9 0%,
+    #285474b0 32%,
+    #3a688d45 66%,
+    #51809618
+  );
+}
+.premium-scene[data-atmosphere="dawn"] > .ambient-shade {
+  background: linear-gradient(
+    100deg,
+    #f2e6f145 0%,
+    #ebddef20 43%,
+    #efd8e000 70%
+  );
+}
+.premium-scene[data-atmosphere="night"] > .ambient-shade {
+  background: linear-gradient(
+    100deg,
+    #433366bd 0%,
+    #51417a87 35%,
+    #71609815 76%
+  );
+}
+.premium-scene > .premium-light {
+  inset: -12%;
+  mix-blend-mode: soft-light;
+  opacity: 0.7;
+  background: radial-gradient(
+    ellipse 45% 60% at 64% 40%,
+    #fff2e14d,
+    transparent 78%
+  );
+}
+.premium-scene > .ambient-grain {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.028;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.86' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' opacity='.85' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.premium-scene .ambient-ripple {
+  width: 140px;
+  height: 140px;
+  margin: -70px 0 0 -70px;
+  border-color: #fff1eb7a;
+  box-shadow:
+    0 0 40px #e3f5fa12,
+    inset 0 0 30px #f6d6ec12;
+}
+.premium-scene[data-atmosphere="dawn"] .ambient-ripple {
+  border-color: #af78a940;
+}
+.premium-scene[data-motion="off"] .ambient-silk,
+.premium-scene[data-motion="off"] .ambient-aureole {
+  animation-play-state: paused;
+}
+.premium-scene-controls.scene-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--scene-ink);
+}
+.premium-scene-controls .scene-controls-label {
+  color: var(--scene-muted);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  opacity: 1;
+  margin: 0;
+}
+.premium-scene-controls .scene-options {
+  padding: 4px;
+  gap: 2px;
+  border: 1px solid var(--scene-border);
+  border-radius: 32px;
+  background: var(--scene-panel);
+  box-shadow: 0 6px 20px var(--scene-shadow);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.premium-scene-controls .scene-options button {
+  gap: 7px;
+  min-height: 36px;
+  padding: 6px 11px;
+  border: 1px solid transparent;
+  border-radius: 24px;
+  font-size: 11px;
+  color: var(--scene-muted);
+  transition:
+    background 0.22s,
+    color 0.22s,
+    box-shadow 0.22s;
+}
+.premium-scene-controls .scene-options button[aria-pressed="true"] {
+  color: var(--scene-ink);
+  background: var(--scene-control-active);
+  border-color: var(--scene-border);
+  box-shadow:
+    0 2px 8px var(--scene-shadow),
+    inset 0 1px #ffffff24;
+}
+.premium-scene-controls .scene-options button:hover {
+  color: var(--scene-ink);
+  background: var(--scene-control-active);
+  border-color: transparent;
+}
+.premium-scene-controls .scene-swatch {
+  width: 20px;
+  height: 20px;
+  box-shadow: inset 0 0 0 1px #fff5;
+  color: #fff7fc;
+}
+.premium-scene-controls .swatch-coast {
+  background: linear-gradient(135deg, #b9ebdc 2%, #70b9ca 45%, #426c97 100%);
+}
+.premium-scene-controls .swatch-dawn {
+  background: linear-gradient(135deg, #f4c093 0%, #d79dbb 48%, #957bbd 100%);
+}
+.premium-scene-controls .swatch-night {
+  background: linear-gradient(135deg, #c9bbf4, #9875c5 46%, #626dc2);
+}
+.premium-scene-controls .scene-tools {
+  gap: 3px;
+  padding-left: 0;
+  border-left: 0;
+}
+.premium-scene-controls .scene-tools button {
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  border: 1px solid var(--scene-border);
+  background: var(--scene-panel);
+  color: var(--scene-ink);
+  opacity: 1;
+  transition:
+    background 0.2s,
+    transform 0.2s;
+}
+.premium-scene-controls .scene-tools button:hover {
+  background: var(--scene-control-active);
+  transform: translateY(-1px);
+}
+.premium-scene-controls button:focus-visible {
+  outline: 2px solid var(--scene-accent);
+  outline-offset: 4px;
+}
+.premium-scene-controls button[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: default;
+  transform: none;
+}
+.premium-scene-controls[aria-busy="true"] button {
+  cursor: wait;
+}
+@keyframes premium-silk-flow {
+  from {
+    transform: translate3d(0, 0, 0) rotate(-31deg);
+  }
+  to {
+    transform: translate3d(-3%, 5%, 0) rotate(-24deg);
+  }
+}
+@keyframes premium-silk-return {
+  from {
+    transform: translate3d(0, 0, 0) rotate(-29deg);
+  }
+  to {
+    transform: translate3d(3%, -4%, 0) rotate(-34deg);
+  }
+}
+@keyframes premium-light-drift {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(-9%, 6%, 0) scale(1.12);
+  }
+}
+@media (max-width: 640px) {
+  .premium-scene .ambient-silk {
+    left: 17%;
+    top: -2%;
+    width: 140%;
+    height: 58%;
+  }
+  .premium-scene .silk-two {
+    left: -6%;
+    top: 65%;
+    height: 62%;
+    width: 170%;
+  }
+  .premium-scene .ambient-aureole {
+    width: 83%;
+    right: -22%;
+    top: 18%;
+  }
+  .premium-scene-controls.scene-controls {
+    gap: 9px;
+    flex-wrap: wrap;
+  }
+  .premium-scene-controls .scene-controls-label {
+    display: none;
+  }
+  .premium-scene-controls .scene-options {
+    padding: 3px;
+  }
+  .premium-scene-controls .scene-options button {
+    min-height: 38px;
+    padding: 6px 10px;
+  }
+  .premium-scene-controls .scene-tools button {
+    height: 40px;
+    width: 40px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .premium-scene .ambient-silk,
+  .premium-scene .ambient-aureole {
+    animation: none;
+  }
+  .premium-scene,
+  .premium-scene-controls button {
+    transition: none;
+  }
+}

@@ -320,12 +320,10 @@ export function Dashboard({
               </span>
               <button
                 onClick={() =>
-                  document
-                    .getElementById("collected-moments")
-                    ?.scrollIntoView({
-                      behavior: reduce ? "instant" : "smooth",
-                      block: "start",
-                    })
+                  document.getElementById("collected-moments")?.scrollIntoView({
+                    behavior: reduce ? "instant" : "smooth",
+                    block: "start",
+                  })
                 }
               >
                 往下，都是我们
@@ -608,10 +606,11 @@ export function MemoryCard({
 }) {
   const media = memory.media[0];
   const Icon = categoryIcons[memory.category];
+  const reduce = useReducedMotion();
   return (
     <motion.button
-      layout
-      whileTap={{ scale: 0.99 }}
+      layout={!reduce}
+      whileTap={reduce ? undefined : { scale: 0.99 }}
       className={"memory-card category-" + memory.category}
       onClick={onClick}
     >
